@@ -9,6 +9,7 @@ import { detectFigures, figureAt, setFigureHover } from "./figures.js";
 import { initLeftRail, initRightPanel, initLayout, toggleOutline, ensureFullText } from "./panels.js";
 import { translatePage, setTranslate } from "./translate.js";
 import { requireSignIn, authHeaders, me, showPaywall } from "./auth.js";
+import { initExport, editPersona } from "./extras.js";
 
 globalThis.pdfjsLib = pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/build/pdf.worker.mjs";
@@ -43,6 +44,12 @@ function buildTopbar() {
       <button class="tool-btn" id="btn-fig" title="Hover figures, tables and equations to explain them">${icon("image", 16)}<span>Image Explanation</span></button>
       <button class="tool-btn" id="btn-tr" title="Side-by-side translation">${icon("languages", 16)}<span>Translate</span></button>
       <button class="icon-btn" id="btn-settings" title="Settings">${icon("settings")}</button>
+      <button class="icon-btn" id="btn-export" title="Download & export">${icon("download")}</button>
+    </div>
+    <div class="dropdown menu" id="dd-export" popover="auto">
+      <button class="menu-item" data-export="pdf">${icon("download", 16)} Download PDF</button>
+      <button class="menu-item" data-export="md">${icon("note", 16)} Export highlights & notes (Markdown)</button>
+      <button class="menu-item" data-export="print">${icon("printer", 16)} Print</button>
     </div>
     <div class="dropdown" id="dd-info" popover="auto"></div>
     <div class="dropdown" id="dd-find" popover="auto">
@@ -57,6 +64,7 @@ function buildTopbar() {
         <option value="lite">Fast · Flash Lite</option><option value="flash">Better · Flash 3.8</option>
       </select></label>
       <label class="row"><input type="checkbox" id="set-focus"> Highlight the sentence under the cursor</label>
+      <div class="row"><span>Personalize AI answers</span><button class="btn small" id="set-persona">${icon("user", 14)} Edit</button></div>
       <div class="ah-legend"><span class="ah-novelty">Novelty</span><span class="ah-method">Method</span><span class="ah-result">Result</span></div>
     </div>`;
 }
@@ -74,6 +82,9 @@ function wireTopbar() {
   $("#btn-info").onclick = () => anchorDropdown($("#dd-info"), $("#btn-info"));
   $("#btn-find").onclick = () => { anchorDropdown($("#dd-find"), $("#btn-find")); $("#find-input").focus(); };
   $("#btn-settings").onclick = () => anchorDropdown($("#dd-settings"), $("#btn-settings"));
+  $("#btn-export").onclick = () => anchorDropdown($("#dd-export"), $("#btn-export"));
+  $("#set-persona").onclick = () => { $("#dd-settings").hidePopover(); editPersona(); };
+  initExport();
 
   const zoomSel = $("#zoom");
   zoomSel.onchange = () => (v.currentScaleValue = zoomSel.value);

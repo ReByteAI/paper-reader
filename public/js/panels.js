@@ -1,7 +1,8 @@
 // Left rail (hover-expand), outline panel, and the resizable right panel with its tabs.
 import { mountUserButton, me } from "./auth.js";
-import { app, saveState, onStateChange, scrollToPagePoint, placeAllSoon, pageText } from "./app.js";
-import { $, $$, h, esc, md, icon, stream, toast } from "./util.js";
+import { app, saveState, onStateChange, scrollToPagePoint, placeAllSoon } from "./app.js";
+import { $, $$, h, esc, md, icon, toast } from "./util.js";
+import { renderAI, renderQuiz, renderRelated } from "./ai.js";
 
 // In a team, list items show who added them.
 const byline = (who) => (me.team && who?.name ? `<span class="by">${esc(who.name)}</span>` : "");
@@ -13,6 +14,8 @@ const TABS = [
   { id: "comments", label: "Comments", icon: "message" },
   { id: "notes", label: "Notes", icon: "note" },
   { id: "citations", label: "Citations", icon: "quote" },
+  { id: "quiz", label: "Quiz", icon: "quiz" },
+  { id: "related", label: "Related papers", icon: "compass" },
 ];
 const root = document.documentElement;
 let activeTab = null;
@@ -134,7 +137,7 @@ export function initRightPanel() {
     if (w) root.style.setProperty("--right-panel-open-w", w + "px");
   } catch {}
   initResize();
-  onStateChange(() => activeTab && activeTab !== "ai" && activeTab !== "notes" && renderTab(activeTab));
+  onStateChange(() => activeTab && !["ai", "notes", "quiz", "related"].includes(activeTab) && renderTab(activeTab));
 }
 
 export function openPanel(tab) {
@@ -183,6 +186,8 @@ function renderTab(tab) {
   const body = $("#rp-body");
   body.dataset.tab = tab;
   if (tab === "ai") return renderAI(body);
+  if (tab === "quiz") return renderQuiz(body);
+  if (tab === "related") return renderRelated(body);
   if (tab === "notes") return renderNotes(body);
   if (tab === "highlights") {
     const xs = [...app.state.highlights].sort((a, b) => a.page - b.page || a.y - b.y);
@@ -247,111 +252,6 @@ function renderNotes(body) {
   };
 }
 
-// ---------- AI: summary + chat ----------
+// ---------- AI, quiz, related: see ai.js ----------
 
-let quote = null; // { text, page }
-let chatAbort = null;
-
-export function askWithQuote(text, page) {
-  quote = { text, page };
-  openPanel("ai");
-  setTimeout(() => $("#chat-input")?.focus(), 50);
-}
-
-function renderAI(body) {
-  if (!body.querySelector(".ai")) {
-    body.innerHTML = `<div class="ai">
-      <div class="ai-scroll">
-        <section class="summary-box"><div class="li-head">${icon("sparkles", 14)} Reading guide<span class="grow"></span><button class="btn ghost small" id="sum-btn">Generate</button></div><div class="md summary"></div></section>
-        <div class="chat"></div>
-      </div>
-      <div class="composer">
-        <div class="quote-chip" hidden></div>
-        <div class="suggest"></div>
-        <div class="input-row"><textarea id="chat-input" rows="1" placeholder="Ask anything about this paper…"></textarea><button class="btn primary send" title="Send (Enter)">${icon("send", 16)}</button></div>
-      </div></div>`;
-    body.querySelector("#sum-btn").onclick = () => runSummary(body);
-    const ta = body.querySelector("#chat-input");
-    ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 160) + "px"; });
-    ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(body); } });
-    body.querySelector(".send").onclick = () => send(body);
-    if (app.state.summary) body.querySelector(".summary").innerHTML = md(app.state.summary);
-    if (app.state.summary) body.querySelector("#sum-btn").textContent = "Regenerate";
-  }
-  renderChat(body);
-  const chip = body.querySelector(".quote-chip");
-  chip.hidden = !quote;
-  if (quote) {
-    chip.innerHTML = `${icon("quote", 12)}<span>${esc(quote.text.slice(0, 180))}${quote.text.length > 180 ? "…" : ""}</span><button class="icon-btn">${icon("x", 12)}</button>`;
-    chip.querySelector("button").onclick = () => { quote = null; chip.hidden = true; };
-  }
-  const sug = body.querySelector(".suggest");
-  sug.innerHTML = app.state.chat.length ? "" : ["What problem does this paper solve?", "Explain the core method step by step", "What are the main results and baselines?", "What are the limitations?"].map((q) => `<button class="pill">${q}</button>`).join("");
-  sug.onclick = (e) => { if (e.target.matches(".pill")) { body.querySelector("#chat-input").value = e.target.textContent; send(body); } };
-}
-
-function renderChat(body) {
-  const chat = body.querySelector(".chat");
-  chat.innerHTML = app.state.chat.map((m, k) => `<div class="msg ${m.role}">${m.quote ? `<blockquote class="quote small">${esc(m.quote.slice(0, 200))}</blockquote>` : ""}<div class="${m.role === "user" ? "" : "md"}" data-k="${k}">${m.role === "user" ? esc(m.text) : md(m.text)}</div></div>`).join("")
-    + (app.state.chat.length ? `<button class="btn ghost small clear-chat">Clear chat</button>` : "");
-  chat.querySelector(".clear-chat")?.addEventListener("click", () => { app.state.chat = []; saveState(); renderAI(body); });
-}
-
-async function ensureFullText() {
-  if (app.fullTextSent) return app.fullTextSent;
-  app.fullTextSent = (async () => {
-    const parts = [];
-    for (let i = 0; i < app.pdf.numPages; i++) parts.push(`[Page ${i + 1}]\n` + (await pageText(i)));
-    await fetch(`/api/text/${app.key}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: parts.join("\n\n") }) });
-  })();
-  return app.fullTextSent;
-}
-export { ensureFullText };
-
-async function send(body) {
-  const ta = body.querySelector("#chat-input");
-  const q = ta.value.trim();
-  if (!q) return;
-  chatAbort?.abort();
-  const history = app.state.chat.slice(-12).map((m) => ({ role: m.role, text: m.quote ? `About: """${m.quote}"""\n${m.text}` : m.text }));
-  app.state.chat.push({ role: "user", text: q, quote: quote?.text });
-  const qq = quote;
-  quote = null;
-  ta.value = ""; ta.style.height = "auto";
-  app.state.chat.push({ role: "model", text: "" });
-  renderAI(body);
-  const scroll = body.querySelector(".ai-scroll");
-  scroll.scrollTop = scroll.scrollHeight;
-  const msg = app.state.chat.at(-1);
-  const out = body.querySelector(`.chat [data-k="${app.state.chat.length - 1}"]`);
-  out.parentElement.classList.add("streaming");
-  out.innerHTML = `<div class="skeleton"><i></i><i style="width:70%"></i></div>`;
-  chatAbort = new AbortController();
-  try {
-    await ensureFullText();
-    msg.text = await stream("ask", { key: app.key, lang: app.settings.lang, question: q, quote: qq?.text, history }, (t) => {
-      out.innerHTML = md(t);
-      if (scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 120) scroll.scrollTop = scroll.scrollHeight;
-    }, { signal: chatAbort.signal });
-  } catch (e) {
-    if (e.name !== "AbortError") { msg.text = `⚠️ ${e.message}`; out.innerHTML = md(msg.text); }
-  }
-  out.parentElement.classList.remove("streaming");
-  saveState();
-}
-
-async function runSummary(body) {
-  const box = body.querySelector(".summary");
-  const btn = body.querySelector("#sum-btn");
-  btn.disabled = true;
-  box.innerHTML = `<div class="skeleton"><i></i><i></i><i style="width:60%"></i></div>`;
-  box.classList.add("streaming");
-  await ensureFullText();
-  try {
-    app.state.summary = await stream("summary", { key: app.key, lang: app.settings.lang }, (t) => (box.innerHTML = md(t)));
-    saveState();
-  } catch (e) { box.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
-  box.classList.remove("streaming");
-  btn.disabled = false;
-  btn.textContent = "Regenerate";
-}
+export { askWithQuote, ensureFullText } from "./ai.js";

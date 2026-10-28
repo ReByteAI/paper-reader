@@ -1,6 +1,8 @@
 import { marked } from "/vendor/marked/lib/marked.esm.js";
 import katex from "/vendor/katex/katex.mjs";
 
+import { app } from "./app.js";
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -43,8 +45,11 @@ export function md(text) {
 
 // ---- Streaming text from the server ----
 // Calls onText(fullTextSoFar) at most once per animation frame. Returns the final text.
+// Every AI request carries the reader's personalization (Settings → Personalize AI).
+const withPersona = (body) => JSON.stringify({ ...body, persona: app.settings.persona });
+
 export async function stream(task, body, onText, { signal } = {}) {
-  const res = await fetch(`/api/ai/stream/${task}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal });
+  const res = await fetch(`/api/ai/stream/${task}`, { method: "POST", headers: { "content-type": "application/json" }, body: withPersona(body), signal });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
   const reader = res.body.getReader();
   const dec = new TextDecoder();
@@ -60,7 +65,7 @@ export async function stream(task, body, onText, { signal } = {}) {
 }
 
 export async function aiJson(task, body) {
-  const res = await fetch(`/api/ai/json/${task}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const res = await fetch(`/api/ai/json/${task}`, { method: "POST", headers: { "content-type": "application/json" }, body: withPersona(body) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || res.statusText);
   return data;
@@ -105,6 +110,13 @@ const ICONS = {
   panelRight: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
   bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  printer: '<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  quiz: '<path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/>',
+  compass: '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/>',
+  "plus-circle": '<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
 };
 export const icon = (name, size = 18) =>
   `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;

@@ -62,6 +62,8 @@ server.js            Local Node server: disk stores under data/ + static files
 worker/index.js      Cloudflare Worker: R2 + D1 stores, Clerk config, static assets
 migrations/          D1 schema
 public/js/auth.js    Clerk sign-in, token on /api requests, Pro paywall
+public/js/ai.js      With AI panel (keywords, three-line summary, reading guide, discussions with reference papers), Quiz, Related papers
+public/js/extras.js  export (PDF, Markdown, print) and the Personalize AI dialog
 lib/prompts.js       Prompt for every AI task
 public/js/app.js     Shared context, page-fraction geometry, overlay layers, anchored cards
 public/js/sentences.js   Text layer → sentences (Range rects), hover state, auto highlight

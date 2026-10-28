@@ -77,6 +77,10 @@ dialog.dialog[open] { animation: dlg-in .14s ease-out; }
 .dialog h2 { margin: 0; color: var(--text); font-size: 17px; font-weight: 600; line-height: 1.35; }
 .dialog p { margin: 8px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
 .dialog .input { width: 100%; height: 36px; margin-top: 16px; font-size: 14px; }
+dialog.dialog.persona { width: min(560px, calc(100vw - 32px)); }
+.dialog .field { display: grid; gap: 6px; margin-top: 16px; font-size: 13px; font-weight: 500; }
+.dialog .field small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; }
+.dialog textarea.input { width: 100%; height: auto; min-height: 0; padding: 8px 10px; line-height: 1.5; resize: vertical; font-size: 13px; }
 .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
 
 kbd { font: 11px/1 var(--mono); padding: 2px 4px; border-radius: 4px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); }
