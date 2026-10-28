@@ -45,6 +45,7 @@ const diskStore = {
   async list(prefix) {
     try { return (await fsp.readdir(path.join(DATA, prefix))).map((f) => prefix + f); } catch { return []; }
   },
+  delete: (p) => fsp.rm(path.join(DATA, p), { force: true }),
 };
 
 // Per-user library index as data/library/<uid>/<key>.json (reading state itself is in the store at users/<uid>/).
@@ -56,13 +57,26 @@ const diskUsers = {
   async put(uid, key, entry) {
     const file = userFile(uid, key);
     await fsp.mkdir(path.dirname(file), { recursive: true });
-    await fsp.writeFile(file, JSON.stringify({ key, ...entry }));
+    const { customTitle } = (await this.get(uid, key)) || {};
+    await fsp.writeFile(file, JSON.stringify({ key, ...entry, customTitle }));
+  },
+  async rename(uid, key, title) {
+    const entry = await this.get(uid, key);
+    if (entry) await fsp.writeFile(userFile(uid, key), JSON.stringify({ ...entry, customTitle: title || undefined }));
+  },
+  delete: (uid, key) => fsp.rm(userFile(uid, key), { force: true }),
+  async holders(key) {
+    const root = path.join(DATA, "library");
+    let n = 0;
+    for (const u of await fsp.readdir(root).catch(() => [])) if (fs.existsSync(path.join(root, u, key + ".json"))) n++;
+    return n;
   },
   async list(uid) {
     const dir = path.dirname(userFile(uid, "x"));
     const out = [];
     for (const f of await fsp.readdir(dir).catch(() => [])) {
-      out.push(JSON.parse(await fsp.readFile(path.join(dir, f), "utf8")));
+      const e = JSON.parse(await fsp.readFile(path.join(dir, f), "utf8"));
+      out.push({ ...e, title: e.customTitle || e.title, originalTitle: e.title });
     }
     return out;
   },
@@ -89,7 +103,6 @@ const STATIC = [
   ["/vendor/marked/", path.join(ROOT, "node_modules/marked")],
   ["/vendor/katex/", path.join(ROOT, "node_modules/katex/dist")],
   ["/", path.join(ROOT, "public")],
-  ["/", path.join(ROOT, ".build")], // npm run build:silk
 ];
 async function asset(urlPath) {
   for (const [prefix, dir] of STATIC) {

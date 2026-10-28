@@ -1,7 +1,10 @@
 // Left rail (hover-expand), outline panel, and the resizable right panel with its tabs.
-import { mountUserButton } from "./auth.js";
+import { mountUserButton, me } from "./auth.js";
 import { app, saveState, onStateChange, scrollToPagePoint, placeAllSoon, pageText } from "./app.js";
 import { $, $$, h, esc, md, icon, stream, toast } from "./util.js";
+
+// In a team, list items show who added them.
+const byline = (who) => (me.team && who?.name ? `<span class="by">${esc(who.name)}</span>` : "");
 
 const TABS = [
   { id: "ai", label: "With AI", icon: "bot" },
@@ -184,14 +187,14 @@ function renderTab(tab) {
   if (tab === "highlights") {
     const xs = [...app.state.highlights].sort((a, b) => a.page - b.page || a.y - b.y);
     body.innerHTML = xs.length ? xs.map((x) => `<div class="list-item" data-page="${x.page}" data-y="${x.y}">
-        <div class="li-head"><span class="dot hl-${x.color}"></span>Page ${x.page + 1}<span class="grow"></span><button class="icon-btn" data-del="${x.id}">${icon("trash", 14)}</button></div>
+        <div class="li-head"><span class="dot hl-${x.color}"></span>Page ${x.page + 1}${byline(x.by)}<span class="grow"></span><button class="icon-btn" data-del="${x.id}">${icon("trash", 14)}</button></div>
         <div class="li-quote">${esc(x.text)}</div>${x.comment ? `<div class="li-comment">${icon("message", 12)} ${esc(x.comment)}</div>` : ""}</div>`).join("")
       : empty("highlighter", "Select text and pick a color to highlight.");
   }
   if (tab === "comments") {
     const xs = app.state.highlights.filter((x) => x.comment).sort((a, b) => a.page - b.page || a.y - b.y);
     body.innerHTML = xs.length ? xs.map((x) => `<div class="list-item" data-page="${x.page}" data-y="${x.y}">
-        <div class="li-head">Page ${x.page + 1} · ${fmtDate(x.ts)}</div>
+        <div class="li-head">Page ${x.page + 1} · ${fmtDate(x.mt || x.ts)}${byline(x.commentBy || x.by)}</div>
         <div class="li-quote small">${esc(x.text.slice(0, 160))}</div><div class="li-comment big">${esc(x.comment)}</div></div>`).join("")
       : empty("message", "Select text and press C to comment.");
   }

@@ -16,9 +16,9 @@ body { overflow: hidden; }
 #topbar { position: fixed; top: 0; left: var(--rail-w); right: 0; height: var(--top-h); z-index: 5100; display: flex; align-items: center; gap: 10px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--border); }
 .tb-group { display: flex; align-items: center; gap: 2px; }
 .tb-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; text-align: center; }
-#zoom { height: 30px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); padding: 0 6px; margin-right: 4px; }
+#zoom { margin-right: 4px; }
 .pager { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; color: var(--muted); font-size: 13px; }
-.pager input { width: 40px; height: 30px; text-align: center; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.pager input { width: 44px; padding: 0 4px; text-align: center; }
 .tool-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; font-size: 13px; color: var(--text); white-space: nowrap; }
 .tool-btn:hover { background: var(--panel-2); }
 .tool-btn.on { background: var(--accent-soft); color: var(--accent); }
@@ -27,10 +27,11 @@ body { overflow: hidden; }
 .dropdown { position: fixed; inset: auto; margin: 0; width: 360px; max-height: 70vh; overflow: auto; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 12px; }
 #dd-find { width: 320px; padding: 8px; }
 .find-row { display: flex; align-items: center; gap: 4px; }
-.find-row input { flex: 1; height: 32px; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px; background: var(--panel); }
+.find-row input { flex: 1; min-width: 0; }
 #find-count { color: var(--muted); font-size: 12px; min-width: 36px; text-align: right; }
-#dd-settings .row { display: flex; align-items: center; gap: 8px; justify-content: space-between; padding: 6px 0; }
-#dd-settings select { height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+#dd-settings .row { display: flex; align-items: center; gap: 12px; justify-content: space-between; min-height: 40px; font-size: 13px; }
+#dd-settings .row:has(input[type="checkbox"]) { justify-content: flex-start; gap: 10px; }
+#dd-settings select { min-width: 168px; }
 .ah-legend { display: flex; gap: 6px; margin-top: 8px; font-size: 12px; }
 .ah-legend span { padding: 2px 8px; border-radius: 6px; }
 .info-title { font-weight: 650; font-size: 16px; line-height: 1.35; }
@@ -52,8 +53,10 @@ body { overflow: hidden; }
 .rail-item .icon { flex: none; }
 .rail-label { opacity: 0; transition: opacity 150ms; }
 #leftrail.expanded .rail-label { opacity: 1; }
-.rail-user { display: flex; align-items: center; height: 40px; padding: 0 6px; }
-.rail-user:empty { display: none; }
+/* Same 40px column as the rail icons, so the avatar centers on them. */
+#rail-user { display: flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; }
+#rail-user:empty { display: none; }
+.li-head .by { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--panel-2); color: var(--muted); font-size: 11px; line-height: 18px; }
 .rail-sep { height: 1px; background: var(--border); margin: 6px 4px; }
 
 /* ---------- outline (pushes content) ---------- */
@@ -105,6 +108,10 @@ html.rp-resizing #main, html.rp-resizing #rightpanel { transition: none; }
 html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
 .tr-col { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; overflow: auto; background: var(--panel); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.12); padding: 6% 7%; font-size: calc(var(--scale-factor, 1) * 10.5px); line-height: 1.7; color: var(--text); }
 .tr-col p { margin: 0 0 .8em; }
+.tr-redo { position: sticky; top: 0; float: right; margin: -4% -5% 0 8px; width: 28px; height: 28px; opacity: .35; transition: opacity .15s; }
+.tr-col:hover .tr-redo, .tr-redo:focus-visible { opacity: 1; }
+.tr-redo:disabled { opacity: .2; cursor: default; }
+@media (hover: none) { .tr-redo { opacity: .7; } }
 .tr-seg { border-radius: 3px; transition: background 80ms; cursor: default; }
 .tr-seg:hover, .tr-seg.active { background: rgba(150, 150, 150, .25); }
 

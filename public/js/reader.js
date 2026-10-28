@@ -1,6 +1,6 @@
 // Reader entry: boots PDF.js, the top bar, and wires every interaction module together.
 import * as pdfjsLib from "/vendor/pdfjs/build/pdf.mjs";
-import { app, pageInfo, repaint, repaintAll, placeAllSoon, pageAtPoint, clientToPage, saveSettings, saveState } from "./app.js";
+import { app, pageInfo, repaint, repaintAll, placeAllSoon, pageAtPoint, clientToPage, saveSettings, saveState, markSynced, pullState } from "./app.js";
 import { $, esc, icon, debounce } from "./util.js";
 import { prepareSentencesFor, sentenceAt, setHover, hover, ensureAutoHighlight } from "./sentences.js";
 import { initSelection } from "./selection.js";
@@ -29,14 +29,14 @@ function buildTopbar() {
     </div>
     <div class="tb-title" id="tb-title"></div>
     <div class="tb-group">
-      <select id="zoom" title="Zoom">
+      <select id="zoom" class="select" title="Zoom">
         <option value="auto">Automatic Zoom</option><option value="page-fit">Page Fit</option><option value="page-width">Page Width</option>
         ${[0.5, 0.75, 1, 1.25, 1.5, 2, 3].map((z) => `<option value="${z}">${z * 100}%</option>`).join("")}
         <option value="custom" hidden></option>
       </select>
       <button class="icon-btn" id="zoom-out" title="Zoom out (⌘-)">${icon("minus")}</button>
       <button class="icon-btn" id="zoom-in" title="Zoom in (⌘+)">${icon("plus")}</button>
-      <span class="pager"><input id="page-num" value="1" inputmode="numeric"> / <span id="page-count">–</span></span>
+      <span class="pager"><input id="page-num" class="input" value="1" inputmode="numeric" aria-label="Page"> / <span id="page-count">–</span></span>
     </div>
     <div class="tb-group tb-tools">
       <button class="tool-btn" id="btn-ah" title="Mark key sentences: novelty / method / result">${icon("highlighter", 16)}<span>Auto Highlight</span></button>
@@ -46,12 +46,15 @@ function buildTopbar() {
     </div>
     <div class="dropdown" id="dd-info" popover="auto"></div>
     <div class="dropdown" id="dd-find" popover="auto">
-      <div class="find-row"><input id="find-input" placeholder="Find in paper"><span id="find-count"></span>
+      <div class="find-row"><input id="find-input" class="input" placeholder="Find in paper"><span id="find-count"></span>
       <button class="icon-btn" id="find-prev" title="Previous (⇧↵)">↑</button><button class="icon-btn" id="find-next" title="Next (↵)">↓</button></div>
     </div>
     <div class="dropdown" id="dd-settings" popover="auto">
-      <label class="row">Answer language<select id="set-lang">
+      <label class="row">Answer language<select id="set-lang" class="select">
         ${[["zh", "中文"], ["en", "English"], ["ja", "日本語"], ["ko", "한국어"], ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"]].map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}
+      </select></label>
+      <label class="row">Translation model<select id="set-trmodel" class="select">
+        <option value="lite">Fast · Flash Lite</option><option value="flash">Better · Flash 3.8</option>
       </select></label>
       <label class="row"><input type="checkbox" id="set-focus"> Highlight the sentence under the cursor</label>
       <div class="ah-legend"><span class="ah-novelty">Novelty</span><span class="ah-method">Method</span><span class="ah-result">Result</span></div>
@@ -132,9 +135,11 @@ function wireTopbar() {
     v.currentScaleValue = app.settings.translate ? fitTwoUp() : "auto";
     forVisible(translatePage);
   });
-  const lang = $("#set-lang"), focus = $("#set-focus");
-  lang.value = app.settings.lang; focus.checked = app.settings.sentenceFocus;
-  lang.onchange = () => { app.settings.lang = lang.value; saveSettings(); for (const p of app.pages) if (p) { p.translation = false; p.trText = ""; } forVisible(translatePage); };
+  const lang = $("#set-lang"), trModel = $("#set-trmodel"), focus = $("#set-focus");
+  lang.value = app.settings.lang; trModel.value = app.settings.trModel; focus.checked = app.settings.sentenceFocus;
+  const retranslate = () => { saveSettings(); for (const p of app.pages) if (p) { p.translation = false; p.trText = ""; } forVisible(translatePage); };
+  lang.onchange = () => { app.settings.lang = lang.value; retranslate(); };
+  trModel.onchange = () => { app.settings.trModel = trModel.value; retranslate(); };
   focus.onchange = () => { app.settings.sentenceFocus = focus.checked; saveSettings(); setHover(-1, [], ""); };
   sync();
 }
@@ -206,7 +211,13 @@ async function boot() {
   ]);
   app.meta = meta;
   Object.assign(app.state, state);
+  markSynced();
   app.state.lastOpened = Date.now();
+  // In a team, pick up teammates' highlights and comments while the paper is open.
+  if (me.team) {
+    setInterval(() => document.visibilityState === "visible" && pullState(), 15000);
+    document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && pullState());
+  }
   saveState();
   renderInfo();
 

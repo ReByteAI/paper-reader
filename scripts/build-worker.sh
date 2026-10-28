@@ -4,7 +4,6 @@ set -e
 cd "$(dirname "$0")/.."
 rm -rf dist && mkdir -p dist/vendor/pdfjs dist/vendor/marked/lib dist/vendor/katex
 cp -R public/. dist/
-npx esbuild src/silk.js --bundle --minify --format=esm --outfile=dist/js/silk.js --legal-comments=none --log-level=warning
 rsync -a --exclude '*.map' node_modules/pdfjs-dist/build node_modules/pdfjs-dist/web node_modules/pdfjs-dist/cmaps node_modules/pdfjs-dist/standard_fonts dist/vendor/pdfjs/
 cp node_modules/marked/lib/marked.esm.js dist/vendor/marked/lib/
 rsync -a --exclude '*.map' node_modules/katex/dist/ dist/vendor/katex/

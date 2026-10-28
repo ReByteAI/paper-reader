@@ -13,8 +13,9 @@
     // Clerk application "xyznot.com" (production instance, Frontend API clerk.xyznot.com).
     "CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsueHl6bm90LmNvbSQ",
     "AUTH_ORIGINS": "https://xyznot.com,https://paper.xyznot.com,http://localhost:5178",
-    // Clerk Billing plan slug that unlocks AI routes, and Clerk user ids that get AI for free (owner).
-    "PAID_PLAN": "pro",
+    // Clerk Billing plan slug that unlocks AI routes; empty means AI is free for everyone (the
+    // personal plan is free). FREE_USERS: Clerk user ids that never pay (owner).
+    "PAID_PLAN": "",
     "FREE_USERS": "user_3LIzmi9iCEL03k6KSsp0t6GkSlJ"
   },
   // Home page search (Querit) is open to signed-out visitors: 20 searches per minute per IP.

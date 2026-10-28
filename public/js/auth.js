@@ -2,13 +2,13 @@
 // Frontend API and every same-origin /api request carries the session token. Without a key (local
 // single-user mode) this is a no-op.
 
-let clerk = null;
+let clerk = null, fapi = "";
 export const me = { ai: true }; // filled from /api/me after sign-in
 
 export async function initAuth() {
   const { clerkPublishableKey: pk } = await fetch("/api/config").then((r) => r.json()).catch(() => ({}));
   if (!pk) return null;
-  const host = atob(pk.replace(/^pk_(test|live)_/, "")).replace(/\$$/, "");
+  const host = fapi = atob(pk.replace(/^pk_(test|live)_/, "")).replace(/\$$/, "");
   await new Promise((resolve, reject) => {
     const s = Object.assign(document.createElement("script"), {
       src: `https://${host}/npm/@clerk/clerk-js@5.128.0/dist/clerk.browser.js`, async: true, crossOrigin: "anonymous",
@@ -20,7 +20,12 @@ export async function initAuth() {
   clerk = window.Clerk;
   await clerk.load();
   patchFetch();
-  if (clerk.user) Object.assign(me, await fetch("/api/me").then((r) => r.json()).catch(() => ({})));
+  if (clerk.user) {
+    Object.assign(me, await fetch("/api/me").then((r) => r.json()).catch(() => ({})));
+    const u = clerk.user;
+    me.name = u.fullName || u.username || u.primaryEmailAddress?.emailAddress?.split("@")[0] || "Member";
+    me.teamName = clerk.organization?.name || "";
+  }
   return clerk;
 }
 
@@ -74,6 +79,29 @@ export function showPaywall() {
   const close = () => { clerk.unmountPricingTable(table); el.remove(); };
   el.querySelector(".pw-close").onclick = close;
   el.addEventListener("pointerdown", (e) => { if (e.target === el) close(); });
+}
+
+// Workspace switcher: personal library or a team (Clerk organization). clerk-js 5.128 switches the
+// active organization only in memory, so a reload fell back to the old one; the choice is saved
+// on the session through the Frontend API, then the page reloads so every request carries it.
+async function saveActiveOrg(id) {
+  await fetch(`https://${fapi}/v1/client/sessions/${clerk.session.id}/touch`, {
+    method: "POST", credentials: "include",
+    headers: { "content-type": "application/x-www-form-urlencoded" }, body: "active_organization_id=" + encodeURIComponent(id),
+  });
+}
+
+export function mountWorkspaceSwitcher(el) {
+  if (!clerk?.user) return false;
+  let current = clerk.organization?.id || "";
+  clerk.mountOrganizationSwitcher(el, { hidePersonal: false });
+  clerk.addListener(({ organization }) => {
+    const id = organization?.id || "";
+    if (id === current) return;
+    current = id;
+    saveActiveOrg(id).finally(() => location.reload());
+  });
+  return true;
 }
 
 export function mountUserButton(el) {

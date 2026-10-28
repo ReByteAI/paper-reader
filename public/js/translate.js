@@ -25,15 +25,16 @@ function renderTranslation(text) {
   }).join("");
 }
 
-export async function translatePage(i) {
+// regenerate: retranslate a page the reader marked as wrong (server skips the cache, main model).
+export async function translatePage(i, { regenerate = false } = {}) {
   const info = pageInfo(i);
-  if (!app.settings.translate || info.translation || info.trPending) return;
+  if (!app.settings.translate || info.trPending || (info.translation && !regenerate)) return;
   const ss = buildSentences(i);
   if (!ss) return;
   info.trPending = true;
   info.trText = "";
   try {
-    await stream("translate-page", { lang: app.settings.lang, sentences: ss.map((s) => s.text) }, (t) => {
+    await stream("translate-page", { lang: app.settings.lang, model: app.settings.trModel, sentences: ss.map((s) => s.text), regenerate }, (t) => {
       info.trText = t;
       paintColumn(i);
     });
@@ -43,15 +44,19 @@ export async function translatePage(i) {
   paintColumn(i);
 }
 
+const REDO_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>`;
+
 function paintColumn(i) {
   const col = document.querySelector(`.page[data-page-number="${i + 1}"] .tr-col .tr-body`);
   if (col) col.innerHTML = renderTranslation(pageInfo(i).trText || "") || `<div class="skeleton"><i></i><i></i><i style="width:70%"></i></div>`;
+  col?.parentElement.querySelector(".tr-redo")?.toggleAttribute("disabled", !!pageInfo(i).trPending);
   markActive();
 }
 
 addPainter("tr", (i, el) => {
   if (!app.settings.translate) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div class="tr-col"><div class="tr-body"></div></div>`;
+  el.innerHTML = `<div class="tr-col"><button class="icon-btn tr-redo" title="Translation looks wrong? Regenerate this page" aria-label="Regenerate translation">${REDO_ICON}</button><div class="tr-body"></div></div>`;
+  el.querySelector(".tr-redo").onclick = () => translatePage(i, { regenerate: true });
   const body = el.querySelector(".tr-body");
   body.addEventListener("mouseover", (e) => {
     const seg = e.target.closest(".tr-seg");

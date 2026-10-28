@@ -12,6 +12,9 @@
   --accent-text: #ffffff;
   --shadow: 0 10px 30px rgba(20, 20, 40, .14), 0 2px 6px rgba(20, 20, 40, .08);
   --radius: 10px;
+  --ring: #5b47e080;
+  --destructive: #dc2626;
+  --overlay: rgba(10, 10, 20, .45);
   --font: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light;
@@ -20,12 +23,14 @@
   :root:not([data-theme="light"]) {
     --bg: #17181c; --panel: #1e1f24; --panel-2: #26272e; --canvas-bg: #111215; --text: #e9e9ee; --muted: #a0a3ad; --faint: #737782;
     --border: #2f3038; --accent: #8b7bff; --accent-soft: #2c2752; --shadow: 0 10px 30px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4);
+    --ring: #8b7bff80; --destructive: #ef4444; --overlay: rgba(0, 0, 0, .6);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #17181c; --panel: #1e1f24; --panel-2: #26272e; --canvas-bg: #111215; --text: #e9e9ee; --muted: #a0a3ad; --faint: #737782;
   --border: #2f3038; --accent: #8b7bff; --accent-soft: #2c2752; --shadow: 0 10px 30px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4);
+  --ring: #8b7bff80; --destructive: #ef4444; --overlay: rgba(0, 0, 0, .6);
   color-scheme: dark;
 }
 
@@ -37,17 +42,43 @@ a { color: var(--accent); }
 .grow { flex: 1; }
 .muted { color: var(--muted); }
 
-.btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; text-decoration: none; color: var(--text); font-size: 13px; white-space: nowrap; }
+/* ---------- components (shadcn/ui conventions: 36px controls, 8px radius, one focus ring) ---------- */
+/* Focus ring only for keyboard focus; mouse clicks leave no outline. */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; text-decoration: none; color: var(--text); font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
 .btn:hover { background: var(--panel-2); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-.btn.primary:hover { filter: brightness(1.08); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); }
+.btn.destructive { background: var(--destructive); border-color: var(--destructive); color: #fff; }
+.btn.destructive:hover { filter: brightness(1.08); background: var(--destructive); }
 .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
 .btn.ghost:hover { background: var(--panel-2); color: var(--text); }
-.btn.small { height: 26px; font-size: 12px; padding: 0 8px; }
-.btn:disabled { opacity: .5; cursor: default; }
-.icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; padding: 0; }
+.btn.small { height: 30px; font-size: 12px; padding: 0 10px; }
+.btn:disabled { opacity: .5; cursor: default; pointer-events: none; }
+.icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; padding: 0; transition: background .15s, color .15s; }
 .icon-btn:hover { background: var(--panel-2); color: var(--text); }
 .icon-btn.on { background: var(--accent-soft); color: var(--accent); }
+.icon-btn:disabled { opacity: .4; cursor: default; }
+
+.input, .select { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 13px; transition: border-color .15s, box-shadow .15s; }
+.input:focus-visible, .select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.select { appearance: none; -webkit-appearance: none; padding-right: 28px; cursor: pointer;
+  background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239aa0aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center / 14px; }
+.select:hover, .input:hover { border-color: var(--faint); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+
+/* Dialog (confirm / prompt), see js/ui.js. */
+dialog.dialog { width: min(440px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+dialog.dialog::backdrop { background: var(--overlay); }
+dialog.dialog[open] { animation: dlg-in .14s ease-out; }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(4px) scale(.98); } }
+.dialog h2 { margin: 0; color: var(--text); font-size: 17px; font-weight: 600; line-height: 1.35; }
+.dialog p { margin: 8px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.dialog .input { width: 100%; height: 36px; margin-top: 16px; font-size: 14px; }
+.dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+
 kbd { font: 11px/1 var(--mono); padding: 2px 4px; border-radius: 4px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); }
 
 #toast { position: fixed; left: 50%; bottom: 28px; translate: -50% 20px; opacity: 0; background: #222; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; z-index: 99999; transition: .2s; pointer-events: none; }

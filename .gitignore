@@ -3,4 +3,3 @@ data/
 .env
 dist/
 .wrangler/
-.build/

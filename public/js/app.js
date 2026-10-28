@@ -1,21 +1,52 @@
 // Shared reader context. Modules import `app` and read pdf/viewer/state from it after boot.
 import { h, esc, icon, debounce } from "./util.js";
+import { me } from "./auth.js";
 
 export const app = {
   key: "", meta: {}, pdf: null, viewer: null, eventBus: null, linkService: null,
   state: { highlights: [], explanations: [], citations: [], notes: "", chat: [] },
-  settings: { lang: "zh", sentenceFocus: true, figures: true, autoHighlight: false, translate: false },
+  settings: { lang: "zh", trModel: "lite", sentenceFocus: true, figures: true, autoHighlight: false, translate: false },
   pages: [], // per page index: { sentences, figures, autohl, translation }
 };
 
 // ---------- persistence ----------
 
-const putState = debounce(() => {
-  fetch(`/api/state/${app.key}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(app.state) });
-}, 400);
+// Shared lists are merged per item on the server (lib/state.js). Each save sends the ids this
+// client had at its last sync (`_base`) and takes the merged lists back, which also brings in
+// teammates' changes. pullState() fetches them between saves.
+const SHARED = ["highlights", "explanations", "citations"];
+let base = null, dirty = false, inflight = false;
 const listeners = new Set();
-export function saveState() { putState(); listeners.forEach((fn) => fn()); }
+
+export function markSynced() { base = Object.fromEntries(SHARED.map((k) => [k, (app.state[k] || []).map((x) => x.id)])); }
+
+function applyServer(s) {
+  let changed = false;
+  for (const k of SHARED) {
+    if (Array.isArray(s[k]) && JSON.stringify(s[k]) !== JSON.stringify(app.state[k])) { app.state[k] = s[k]; changed = true; }
+  }
+  markSynced();
+  if (changed) { repaintAll("hl"); listeners.forEach((fn) => fn()); }
+}
+
+const putState = debounce(async () => {
+  dirty = false;
+  // Items new since the last sync are this member's: sign them for the team view.
+  for (const k of SHARED) for (const x of app.state[k] || []) if (!x.by && !base?.[k]?.includes(x.id)) x.by = { id: me.uid, name: me.name };
+  inflight = true;
+  try {
+    const r = await fetch(`/api/state/${app.key}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...app.state, _base: base }) });
+    if (r.ok && !dirty) applyServer(await r.json());
+  } finally { inflight = false; }
+}, 400);
+export function saveState() { dirty = true; putState(); listeners.forEach((fn) => fn()); }
 export const onStateChange = (fn) => listeners.add(fn);
+
+export async function pullState() {
+  if (dirty || inflight || !app.key) return;
+  const s = await fetch(`/api/state/${app.key}`).then((r) => r.json()).catch(() => null);
+  if (s && !dirty && !inflight) applyServer(s);
+}
 
 export function saveSettings() {
   try { localStorage.setItem("pr-settings", JSON.stringify(app.settings)); } catch {}

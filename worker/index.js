@@ -9,6 +9,7 @@ const r2Store = (bucket) => ({
     return o && { size: o.size, body: o.body, text: () => o.text(), arrayBuffer: () => o.arrayBuffer() };
   },
   put: (p, data) => bucket.put(p, data),
+  delete: (p) => bucket.delete(p),
   async list(prefix) {
     const out = [];
     let cursor;
@@ -28,9 +29,12 @@ const d1Users = (db) => ({
      ON CONFLICT (user_id, key) DO UPDATE SET title = excluded.title, authors = excluded.authors,
        last_opened = excluded.last_opened, last_page = excluded.last_page, highlights = excluded.highlights`,
   ).bind(uid, key, e.title, JSON.stringify(e.authors || []), e.lastOpened, e.lastPage, e.highlights).run(),
+  delete: (uid, key) => db.prepare("DELETE FROM library WHERE user_id = ? AND key = ?").bind(uid, key).run(),
+  rename: (uid, key, title) => db.prepare("UPDATE library SET custom_title = ? WHERE user_id = ? AND key = ?").bind(title, uid, key).run(),
+  holders: async (key) => (await db.prepare("SELECT COUNT(*) AS n FROM library WHERE key = ?").bind(key).first()).n,
   async list(uid) {
-    const { results } = await db.prepare("SELECT key, title, authors, last_opened, last_page, highlights FROM library WHERE user_id = ? ORDER BY last_opened DESC").bind(uid).all();
-    return results.map((r) => ({ key: r.key, title: r.title, authors: JSON.parse(r.authors || "[]"), lastOpened: r.last_opened, lastPage: r.last_page, highlights: r.highlights }));
+    const { results } = await db.prepare("SELECT key, COALESCE(custom_title, title) AS title, title AS original_title, authors, last_opened, last_page, highlights FROM library WHERE user_id = ? ORDER BY last_opened DESC").bind(uid).all();
+    return results.map((r) => ({ key: r.key, title: r.title, originalTitle: r.original_title, authors: JSON.parse(r.authors || "[]"), lastOpened: r.last_opened, lastPage: r.last_page, highlights: r.highlights }));
   },
 });
 

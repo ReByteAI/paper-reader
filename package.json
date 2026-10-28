@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm run build:silk && node server.js",
-    "build:silk": "esbuild src/silk.js --bundle --minify --format=esm --outfile=.build/js/silk.js --legal-comments=none",
+    "start": "node server.js",
     "deploy": "sh scripts/build-worker.sh && wrangler deploy"
   },
   "keywords": [],
@@ -16,9 +15,5 @@
     "katex": "^0.16.11",
     "marked": "^12.0.2",
     "pdfjs-dist": "^4.10.38"
-  },
-  "devDependencies": {
-    "esbuild": "0.25.12",
-    "shaders": "4.0.4"
   }
 }

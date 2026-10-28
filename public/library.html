@@ -29,8 +29,12 @@
     .err { color: var(--muted); min-height: 20px; margin: 10px 18px; font-size: 13px; }
     h2 { font-size: 15px; color: var(--muted); margin: 36px 0 12px; font-weight: 600; }
     .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-    .paper { display: block; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); }
+    .paper { position: relative; display: block; padding: 14px 84px 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); transition: border-color .15s; }
     .paper:hover { border-color: var(--accent); }
+    .paper .acts { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+    .paper:hover .acts, .paper:focus-within .acts { opacity: 1; }
+    .paper .acts .danger:hover { color: var(--destructive); }
+    @media (hover: none) { .paper .acts { opacity: 1; } }
     .paper .t { font-weight: 600; line-height: 1.35; }
     .paper .a { color: var(--muted); font-size: 13px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .paper .m { color: var(--faint); font-size: 12px; margin-top: 6px; display: flex; gap: 12px; }
@@ -38,12 +42,13 @@
     .hint { color: var(--faint); font-size: 12.5px; margin-top: 10px; }
     .hint code { background: var(--panel); padding: 1px 5px; border-radius: 4px; }
     .head { display: flex; align-items: center; gap: 12px; }
-    #user { margin-left: auto; }
+    #ws { margin-left: auto; }
+    #ws:empty { display: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="head"><h1><a href="/"><span class="logo-dot"></span>Library</a></h1><div id="user"></div></div>
+    <div class="head"><h1><a href="/"><span class="logo-dot"></span>Library</a></h1><div id="ws"></div><div id="user"></div></div>
     <div id="app">
     <div class="search">
       <form id="f" role="search">
@@ -63,10 +68,13 @@
   <script type="module">
     const $ = (s) => document.querySelector(s);
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-    import { requireSignIn, mountUserButton } from "/js/auth.js";
+    import { requireSignIn, mountUserButton, mountWorkspaceSwitcher, me } from "/js/auth.js";
     import { attachSearch } from "/js/search.js";
+    import { confirmDialog, promptDialog } from "/js/ui.js";
     try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
     await requireSignIn().catch((e) => ($("#err").textContent = e.message));
+    mountWorkspaceSwitcher($("#ws"));
+    if (me.team) $("#library").textContent = `${me.teamName || "Team"} · shared with your team`;
     mountUserButton($("#user"));
     attachSearch({ form: $("#f"), input: $("#q"), list: $("#results"), tip: $("#err") });
     $("#up").onclick = () => {
@@ -83,8 +91,38 @@
     $("#list").innerHTML = papers.length ? papers.map((p) => `<a class="paper" href="/paper/${esc(p.key)}">
         <div class="t">${esc(p.title)}</div>
         <div class="a">${esc((p.authors || []).join(", "))}</div>
-        <div class="m"><span>${esc(p.id)}</span>${p.lastOpened ? `<span>Opened ${new Date(p.lastOpened).toLocaleDateString()}</span>` : ""}<span>Page ${p.lastPage}</span>${p.highlights ? `<span>${p.highlights} highlights</span>` : ""}</div></a>`).join("")
-      : `<div class="empty">No papers yet. Paste an arXiv link above.</div>`;
+        <div class="m"><span>${esc(p.id)}</span>${p.lastOpened ? `<span>Opened ${new Date(p.lastOpened).toLocaleDateString()}</span>` : ""}<span>Page ${p.lastPage}</span>${p.highlights ? `<span>${p.highlights} highlights</span>` : ""}</div>
+        <div class="acts">
+          <button class="icon-btn" type="button" data-act="rename" data-key="${esc(p.key)}" data-original="${esc(p.originalTitle || p.title)}" title="Rename" aria-label="Rename">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="icon-btn danger" type="button" data-act="delete" data-key="${esc(p.key)}" title="Remove from library" aria-label="Remove from library">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+          </button>
+        </div></a>`).join("")
+      : `<div class="empty">No papers yet. Search for one above.</div>`;
+    const fail = async (r, msg) => ($("#err").textContent = (await r.json().catch(() => ({}))).error || msg);
+    $("#list").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      e.preventDefault();
+      const card = btn.closest(".paper"), title = card.querySelector(".t");
+      const url = "/api/papers/" + encodeURIComponent(btn.dataset.key);
+      if (btn.dataset.act === "rename") {
+        const name = await promptDialog({ title: "Rename paper", description: "Only your library shows this name. Leave it empty to use the paper's own title.", value: title.textContent, placeholder: btn.dataset.original });
+        if (name === null) return;
+        const r = await fetch(url, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: name }) });
+        if (!r.ok) return fail(r, "Could not rename the paper.");
+        title.textContent = name || btn.dataset.original;
+        return;
+      }
+      const ok = await confirmDialog({ title: "Remove from library?", description: `"${title.textContent}" and its highlights, notes and chat will be deleted. This cannot be undone.`, confirmLabel: "Remove", destructive: true });
+      if (!ok) return;
+      const r = await fetch(url, { method: "DELETE" });
+      if (!r.ok) return fail(r, "Could not remove the paper.");
+      card.remove();
+      if (!$("#list .paper")) $("#list").innerHTML = `<div class="empty">No papers yet. Search for one above.</div>`;
+    });
   </script>
 </body>
 </html>

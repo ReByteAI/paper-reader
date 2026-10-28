@@ -1,5 +1,6 @@
 // Text selection menu (Popover API), highlights, comments, inline explanations and translations.
 import { app, saveState, rectsToPages, addPainter, repaint, rectStyle, inRects, openCard, closeCard, pageAtPoint, clientToPage, contextAround, pageText, scrollToPagePoint } from "./app.js";
+import { me } from "./auth.js";
 import { h, esc, md, icon, stream, uid, toast } from "./util.js";
 import { openPanel, askWithQuote } from "./panels.js";
 
@@ -37,7 +38,7 @@ export function removeHighlight(id) {
 export function updateHighlight(id, patch) {
   const x = app.state.highlights.find((y) => y.id === id);
   if (!x) return;
-  Object.assign(x, patch);
+  Object.assign(x, patch, { mt: Date.now() }, "comment" in patch && patch.comment ? { commentBy: { id: me.uid, name: me.name } } : {});
   saveState();
   repaintHl(x);
 }

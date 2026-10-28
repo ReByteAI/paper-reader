@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#17130f">
+  <meta name="theme-color" content="#faf8f4">
   <title>XYZNOT — read papers like you wrote them</title>
   <meta name="description" content="Paste an arXiv link. Citations open in place, figures explain themselves, and an assistant that has read every page answers your questions.">
   <link rel="canonical" href="https://xyznot.com/">
@@ -16,11 +16,8 @@
   <link rel="stylesheet" href="/assets/fonts.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/home.css">
-  <script type="module" src="/js/silk.js"></script>
 </head>
 <body class="home">
-  <div class="art" aria-hidden="true"><canvas id="silk"></canvas></div>
-  <div class="veil" aria-hidden="true"></div>
 
   <header class="top">
     <a class="wordmark" href="/">XYZNOT</a>
@@ -52,10 +49,6 @@
     <a href="/terms.html">Terms</a>
   </footer>
 
-  <button id="motion" type="button" aria-label="Pause animation" aria-pressed="false" hidden>
-    <svg class="pause" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5v10M13 5v10"/></svg>
-    <svg class="play" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 5 8 5-8 5Z"/></svg>
-  </button>
 
   <script type="module">
     import { initAuth, signedIn, openSignIn, mountUserButton } from "/js/auth.js";
