@@ -74,3 +74,14 @@ public/js/panels.js      Left rail, outline, right panel tabs, chat, notes
 public/js/translate.js   Translation column with <|#n|> sentence markers
 data/                PDFs, metadata, AI cache and user state (git-ignored)
 ```
+
+## Browser extension
+
+`extension/` is a Manifest V3 Chrome extension:
+
+- The toolbar button opens the current tab in XYZNOT. An arXiv page opens as `/paper/<id>`. Any other PDF (including files that need the user's login, and local files when "Allow access to file URLs" is on) is read by the extension with the user's own access, kept under a one-time nonce, and collected by `xyznot.com/open` through `externally_connectable`. That page uploads it to the library. The server never fetches arbitrary URLs.
+- arXiv PDF links redirect to XYZNOT automatically (declarativeNetRequest ruleset `arxiv_pdf`, on by default); abstract pages can be included (`arxiv_abs`, off). Both are toggled in the popup. A URL with a query string (e.g. `?download=1`) is left alone.
+- Right-click an arXiv link → "Open in XYZNOT".
+
+Try it with chrome://extensions → Developer mode → Load unpacked → `extension/`. Package for the Web Store with `sh scripts/pack-extension.sh`.
+

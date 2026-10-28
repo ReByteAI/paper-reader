@@ -55,7 +55,7 @@ function patchFetch() {
 // Reader pages: send signed-out visitors to the home page, which shows the sign-in form.
 export async function requireSignIn() {
   await initAuth();
-  if (!signedIn()) { location.replace("/?signin=1&redirect=" + encodeURIComponent(location.pathname)); await new Promise(() => {}); }
+  if (!signedIn()) { location.replace("/?signin=1&redirect=" + encodeURIComponent(location.pathname + location.search)); await new Promise(() => {}); }
 }
 
 // Sign-in modal; after sign-in or sign-up Clerk sends the visitor to `next` (a same-origin path).

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Opening · XYZNOT</title>
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    body { background: var(--canvas-bg); min-height: 100vh; display: grid; place-items: center; }
+    .card { width: min(420px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); text-align: center; }
+    .logo { width: 36px; height: 36px; margin: 0 auto 14px; border-radius: 9px; background: url(/assets/mark.svg) center/cover; }
+    h1 { margin: 0 0 6px; font-size: 17px; }
+    p { margin: 0; color: var(--muted); }
+    .card .btn { margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <div class="card"><div class="logo"></div><h1 id="title">Opening your PDF…</h1><p id="msg">Getting it from the XYZNOT extension.</p></div>
+  <script type="module">
+    // The extension read a PDF the user had open and keeps it under a one-time nonce; this page
+    // collects it, uploads it to the user's library and opens it.
+    import { requireSignIn } from "/js/auth.js";
+    const $ = (s) => document.querySelector(s);
+    const fail = (msg) => { $("#title").textContent = "Could not open this PDF"; $("#msg").textContent = msg; $(".card").insertAdjacentHTML("beforeend", `<a class="btn" href="/library">Go to library</a>`); };
+    const q = new URLSearchParams(location.search);
+    await requireSignIn();
+    const ext = q.get("ext"), nonce = q.get("n");
+    if (!ext || !nonce || !globalThis.chrome?.runtime?.sendMessage) {
+      fail("Open this page from the XYZNOT browser extension.");
+    } else {
+      const item = await new Promise((resolve) => chrome.runtime.sendMessage(ext, { type: "xyznot-pdf", nonce }, (r) => resolve(r || { error: chrome.runtime.lastError?.message || "The extension did not answer." })));
+      if (item.error) fail(item.error);
+      else {
+        $("#msg").textContent = "Uploading to your library…";
+        const bytes = Uint8Array.from(atob(item.data), (c) => c.charCodeAt(0));
+        const r = await fetch("/api/upload", { method: "POST", headers: { "x-filename": encodeURIComponent(item.name) }, body: bytes }).then((x) => x.json()).catch(() => ({}));
+        if (r.key) location.replace("/paper/" + r.key); else fail(r.error || "Upload failed.");
+      }
+    }
+  </script>
+</body>
+</html>

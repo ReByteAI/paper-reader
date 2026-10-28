@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header><img src="icons/icon32.png" alt=""><b>XYZNOT</b><a href="https://xyznot.com/library" target="_blank">Library</a></header>
+  <p id="status">Checking this tab…</p>
+  <button id="open" disabled>Open in XYZNOT</button>
+  <p id="error" hidden></p>
+  <section>
+    <label><input type="checkbox" id="autoPdf"> Open arXiv PDFs in XYZNOT automatically</label>
+    <label><input type="checkbox" id="autoAbs"> Also arXiv abstract pages</label>
+  </section>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
