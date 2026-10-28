@@ -85,3 +85,5 @@ data/                PDFs, metadata, AI cache and user state (git-ignored)
 
 Try it with chrome://extensions → Developer mode → Load unpacked → `extension/`. Package for the Web Store with `sh scripts/pack-extension.sh`.
 
+Chrome Web Store item `ieiignclmajohmabdhfnikenigmaemnb` (publisher sonicgg), submitted 2026-10-28. Listing text and images are in `store/`.
+

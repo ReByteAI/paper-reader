@@ -1,0 +1,23 @@
+Read research papers in XYZNOT with one click.
+
+XYZNOT is a paper reader: citations open where you read them, figures and equations explain themselves, and an assistant that has read the whole paper answers your questions. This extension sends the paper you are looking at to XYZNOT.
+
+What it does
+• On an arXiv page (abstract, PDF or HTML), click the button to open the paper in XYZNOT.
+• On any other PDF (conference proceedings, journals, a PDF behind your login, or a local file), click the button: the extension reads that PDF in your browser and adds it to your XYZNOT library.
+• Optional: open arXiv PDF links in XYZNOT automatically, and arXiv abstract pages too. Both switches are in the popup.
+• Right-click an arXiv link and choose "Open in XYZNOT".
+
+In XYZNOT
+• Hover a citation to see the referenced paper; jump to figures, tables and sections without losing your place.
+• Select text, a figure or an equation to get a plain explanation in context.
+• Keyword glossary, three-line summary and a reading guide for every paper.
+• Chat with the paper, and attach other papers to compare them.
+• Auto highlights for novelty, method and results; side-by-side translation; quizzes.
+• Highlights, comments and notes saved per paper. Teams can share a library.
+
+Privacy
+The extension acts only when you use it. It reads the current tab only when you click its button, and sends that one PDF to xyznot.com. It does not track browsing or collect other data. Privacy policy: https://xyznot.com/privacy.html
+
+Needs a free XYZNOT account (sign in with Google or email at xyznot.com).
+For local PDF files, turn on "Allow access to file URLs" in the extension's details.
