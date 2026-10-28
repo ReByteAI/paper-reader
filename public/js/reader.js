@@ -155,6 +155,34 @@ function wireTopbar() {
   sync();
 }
 
+// Title of an uploaded PDF: its metadata title when it looks like one, else the largest text in
+// the top part of the first page.
+async function guessTitle(pdf) {
+  const info = (await pdf.getMetadata().catch(() => null))?.info;
+  const meta = String(info?.Title || "").trim();
+  if (meta.length >= 10 && /\s/.test(meta) && !/^(untitled|microsoft word|slide)/i.test(meta)) return meta.slice(0, 300);
+  const page = await pdf.getPage(1);
+  const top = page.view[3] * 0.45;
+  const items = (await page.getTextContent()).items.filter((t) => t.str.trim() && t.transform[5] > top);
+  if (!items.length) return "";
+  // The title is the line(s) holding the largest text. Small caps ("FLASHATTENTION") mix sizes on
+  // one line, so take every item on those lines, and join pieces without a space when they touch.
+  const sz = (t) => Math.abs(t.transform[3]);
+  const size = Math.max(...items.map(sz));
+  const ys = [...new Set(items.filter((t) => sz(t) > size - 0.5).map((t) => Math.round(t.transform[5])))];
+  const parts = items.filter((t) => sz(t) >= size * 0.55 && ys.some((y) => Math.abs(t.transform[5] - y) < size * 0.6))
+    .sort((a, b) => Math.round(b.transform[5]) - Math.round(a.transform[5]) || a.transform[4] - b.transform[4]);
+  let line = "", prev = null;
+  for (const t of parts) {
+    const sameLine = prev && Math.abs(t.transform[5] - prev.transform[5]) < size * 0.6;
+    const touching = sameLine && t.transform[4] - (prev.transform[4] + prev.width) < size * 0.15;
+    line += (prev && !touching ? " " : "") + t.str;
+    prev = t;
+  }
+  line = line.replace(/\s+/g, " ").trim();
+  return line.length >= 8 ? line.slice(0, 300) : "";
+}
+
 // Scale so that page + translation column fit side by side.
 function fitTwoUp() {
   const pv = app.viewer.getPageView(0);
@@ -287,9 +315,15 @@ async function boot() {
   initHover();
   // Upload full text in the background so chat/explain have the whole paper as context.
   setTimeout(() => ensureFullText(), 1500);
-  if (meta.title === app.key || app.key.startsWith("local-")) {
-    const md = await pdf.getMetadata().catch(() => null);
-    if (md?.info?.Title && app.meta.title !== md.info.Title) { app.meta.title = md.info.Title; renderInfo(); }
+  // Uploads are named after their file ("2024.naacl-long.35"); find the real title and keep it.
+  if (app.key.startsWith("local-") && !/\s/.test(app.meta.title || "")) {
+    const title = await guessTitle(pdf);
+    if (title) {
+      app.meta.title = title;
+      renderInfo();
+      await fetch(`/api/meta/${app.key}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }) });
+      saveState(); // refreshes the library entry
+    }
   }
   app.repaintAll = repaintAll;
   globalThis.app = app; // handy for debugging in DevTools

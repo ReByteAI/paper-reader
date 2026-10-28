@@ -18,5 +18,5 @@
       { "id": "arxiv_abs", "enabled": false, "path": "rules/arxiv-abs.json" }
     ]
   },
-  "externally_connectable": { "matches": ["https://xyznot.com/*", "http://localhost/*"] }
+  "externally_connectable": { "matches": ["https://xyznot.com/*"] }
 }
