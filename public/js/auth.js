@@ -41,7 +41,7 @@ function patchFetch() {
       init = { ...init, headers };
     }
     const res = await orig(input, init);
-    if (res.status === 401 && clerk && !clerk.user) location.href = "/?redirect=" + encodeURIComponent(location.pathname);
+    if (res.status === 401 && clerk && !clerk.user) location.href = "/?signin=1&redirect=" + encodeURIComponent(location.pathname);
     if (res.status === 402) showPaywall();
     return res;
   };
@@ -50,12 +50,13 @@ function patchFetch() {
 // Reader pages: send signed-out visitors to the home page, which shows the sign-in form.
 export async function requireSignIn() {
   await initAuth();
-  if (!signedIn()) { location.replace("/?redirect=" + encodeURIComponent(location.pathname)); await new Promise(() => {}); }
+  if (!signedIn()) { location.replace("/?signin=1&redirect=" + encodeURIComponent(location.pathname)); await new Promise(() => {}); }
 }
 
-export function mountSignIn(el) {
-  const next = new URLSearchParams(location.search).get("redirect");
-  clerk.mountSignIn(el, { forceRedirectUrl: next && next.startsWith("/") ? next : "/", signUpForceRedirectUrl: next && next.startsWith("/") ? next : "/" });
+// Sign-in modal; after sign-in or sign-up Clerk sends the visitor to `next` (a same-origin path).
+export function openSignIn(next = "/library") {
+  if (!next.startsWith("/") || next.startsWith("//")) next = "/library";
+  clerk?.openSignIn({ forceRedirectUrl: next, signUpForceRedirectUrl: next });
 }
 
 // Clerk's pricing table + checkout in a modal. A finished subscription reloads the page so the

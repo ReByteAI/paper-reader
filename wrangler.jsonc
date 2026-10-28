@@ -12,11 +12,13 @@
     "GEMINI_FAST_MODEL": "gemini-3.5-flash-lite",
     // Clerk application "xyznot.com" (production instance, Frontend API clerk.xyznot.com).
     "CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsueHl6bm90LmNvbSQ",
-    "AUTH_ORIGINS": "https://paper.xyznot.com,http://localhost:5178",
+    "AUTH_ORIGINS": "https://xyznot.com,https://paper.xyznot.com,http://localhost:5178",
     // Clerk Billing plan slug that unlocks AI routes, and Clerk user ids that get AI for free (owner).
     "PAID_PLAN": "pro",
     "FREE_USERS": "user_3LIzmi9iCEL03k6KSsp0t6GkSlJ"
   },
-  "routes": [{ "pattern": "paper.xyznot.com", "custom_domain": true }],
+  // Home page search (Querit) is open to signed-out visitors: 20 searches per minute per IP.
+  "ratelimits": [{ "name": "SEARCH_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }],
+  "routes": [{ "pattern": "xyznot.com", "custom_domain": true }, { "pattern": "paper.xyznot.com", "custom_domain": true }],
   "observability": { "enabled": true }
 }

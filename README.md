@@ -1,4 +1,4 @@
-# Paper Reader
+# XYZNOT — paper reader
 
 A paper reader for arXiv papers and any PDF. PDF.js renders the paper;
 our overlay layers add sentence hover, highlights, in-place citation cards, figure explanations and an
@@ -21,7 +21,7 @@ LaTeX and auto-highlight.
 ## Deploy (Cloudflare)
 
 `npm run deploy` builds `dist/` (public/ + vendor files) and deploys the Worker `paper-reader` to
-`https://paper.xyznot.com`. The Worker runs the same routes as the local server (`lib/core.js`).
+`https://xyznot.com` (`paper.xyznot.com` 301-redirects there). The Worker runs the same routes as the local server (`lib/core.js`).
 
 | Piece | What |
 |---|---|
@@ -30,6 +30,7 @@ LaTeX and auto-highlight.
 | R2 bucket `paper-reader` | Shared: `pdfs/`, `uploads/`, `meta/`, `text/`, `cache/`. Per user: `users/<uid>/<key>.json` = reading state of one paper. |
 | D1 database `paper-reader` | `library` table: which papers each user has, with title, last opened, page, highlight count (`migrations/`). |
 | Worker secret | `GEMINI_API_KEY` (`wrangler secret put GEMINI_API_KEY`). |
+| Worker secret | `QUERIT_API_KEY`: home page paper search (Querit, restricted to arXiv and open proceedings sites; 20 searches/min per IP via the `SEARCH_LIMIT` rate limiter). |
 
 Uploaded PDFs are only readable by users who uploaded them; arXiv papers are open to all signed-in users.
 Locally, `npm start` runs without sign-in as user `local`; set `CLERK_PUBLISHABLE_KEY` to require Clerk.

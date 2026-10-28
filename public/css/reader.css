@@ -44,7 +44,7 @@ body { overflow: hidden; }
 #leftrail.expanded { width: var(--rail-open-w); box-shadow: var(--shadow); }
 #leftrail nav { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
 .rail-logo { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 6px; text-decoration: none; color: var(--text); }
-.logo-dot { flex: none; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #a99bff, var(--accent) 55%, #2b1f7a); }
+.logo-dot { flex: none; width: 28px; height: 28px; border-radius: 7px; background: url(/assets/mark.svg) center/cover; }
 .brand { font-weight: 650; }
 .rail-item { position: relative; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; text-decoration: none; white-space: nowrap; width: 100%; text-align: left; }
 .rail-item:hover { background: var(--panel-2); color: var(--text); }

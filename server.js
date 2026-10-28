@@ -89,6 +89,7 @@ const STATIC = [
   ["/vendor/marked/", path.join(ROOT, "node_modules/marked")],
   ["/vendor/katex/", path.join(ROOT, "node_modules/katex/dist")],
   ["/", path.join(ROOT, "public")],
+  ["/", path.join(ROOT, ".build")], // npm run build:silk
 ];
 async function asset(urlPath) {
   for (const [prefix, dir] of STATIC) {
@@ -106,6 +107,7 @@ async function asset(urlPath) {
 const CLERK_KEY = process.env.CLERK_PUBLISHABLE_KEY || "";
 const handle = createHandler({
   store: diskStore, users: diskUsers, apiKey: loadKey(), model: MODEL, asset,
+  searchKey: process.env.QUERIT_API_KEY || "",
   ...(CLERK_KEY ? {
     verify: createVerifier({ publishableKey: CLERK_KEY, authorizedParties: [`http://localhost:${PORT}`] }),
     publicConfig: { clerkPublishableKey: CLERK_KEY },

@@ -37,6 +37,9 @@ const d1Users = (db) => ({
 let handle;
 export default {
   fetch(req, env) {
+    // The app moved from paper.xyznot.com to the apex; keep old links working.
+    const url = new URL(req.url);
+    if (url.hostname === "paper.xyznot.com") return Response.redirect("https://xyznot.com" + url.pathname + url.search, 301);
     handle ||= createHandler({
       store: r2Store(env.PAPERS),
       users: d1Users(env.DB),
@@ -46,6 +49,8 @@ export default {
       paidPlan: env.PAID_PLAN,
       freeUsers: (env.FREE_USERS || "").split(",").filter(Boolean),
       publicConfig: { clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY },
+      searchKey: env.QUERIT_API_KEY,
+      searchAllowed: async (r) => (await env.SEARCH_LIMIT.limit({ key: r.headers.get("cf-connecting-ip") || "" })).success,
       asset: async (p) => {
         const r = await env.ASSETS.fetch(new URL(p, "https://assets.local"));
         return r.status === 404 ? null : r;

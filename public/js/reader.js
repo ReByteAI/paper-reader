@@ -221,7 +221,7 @@ async function boot() {
   task.onProgress = ({ loaded, total }) => { if (total) status.textContent = `Downloading PDF… ${Math.round((loaded / total) * 100)}%`; };
   let pdf;
   try { pdf = await task.promise; }
-  catch (e) { status.innerHTML = `Could not load this PDF: ${esc(e.message)}. <a href="/">Back</a>`; return; }
+  catch (e) { status.innerHTML = `Could not load this PDF: ${esc(e.message)}. <a href="/library">Back</a>`; return; }
   status.remove();
   app.pdf = pdf;
 

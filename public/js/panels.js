@@ -34,10 +34,10 @@ export function initLayout() {
 export function initLeftRail() {
   const rail = $("#leftrail");
   rail.innerHTML = `
-    <a class="rail-logo" href="/" title="Home"><span class="logo-dot"></span><span class="rail-label brand">Paper Reader</span></a>
+    <a class="rail-logo" href="/" title="Home"><span class="logo-dot"></span><span class="rail-label brand">XYZNOT</span></a>
     <nav>
-      <a href="/" class="rail-item">${icon("home")}<span class="rail-label">Home</span></a>
-      <a href="/#library" class="rail-item">${icon("library")}<span class="rail-label">Library</span></a>
+      <a href="/library" class="rail-item">${icon("home")}<span class="rail-label">Home</span></a>
+      <a href="/library#library" class="rail-item">${icon("library")}<span class="rail-label">Library</span></a>
       <button class="rail-item" data-act="upload">${icon("upload")}<span class="rail-label">Upload PDF</span></button>
       <span class="rail-sep"></span>
       <button class="rail-item" data-act="outline">${icon("outline")}<span class="rail-label">Outline</span></button>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Library · XYZNOT</title>
+  <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    body { background: var(--canvas-bg); min-height: 100vh; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 72px 16px 60px; }
+    h1 { display: flex; align-items: center; gap: 12px; font-size: 28px; margin: 0 0 6px; }
+    .logo-dot { width: 34px; height: 34px; border-radius: 9px; background: url(/assets/mark.svg) center/cover; }
+    h1 a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 12px; }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    .search { position: relative; margin-top: 28px; }
+    #f { display: flex; gap: 6px; background: var(--panel); border: 1px solid var(--border); border-radius: 999px; padding: 6px; box-shadow: var(--shadow); }
+    #f:focus-within { border-color: var(--accent); }
+    #f input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px; padding: 0 14px; }
+    #f .btn { height: 42px; padding: 0 18px; font-size: 14px; border-radius: 999px; }
+    .results { position: absolute; z-index: 10; top: calc(100% + 8px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none; overflow: auto; overscroll-behavior: contain;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); }
+    .results li { display: grid; gap: 3px; padding: 11px 14px; border-radius: 14px; cursor: pointer; }
+    .results li[aria-selected=true], .results li:hover { background: var(--panel-2); }
+    .r-title { font-size: 15px; line-height: 1.35; font-weight: 500; }
+    .r-meta { font-size: 12.5px; color: var(--accent); }
+    .r-snip { font-size: 13px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    @media (max-width: 600px) { #f .btn { padding: 0 12px; } }
+    .err { color: var(--muted); min-height: 20px; margin: 10px 18px; font-size: 13px; }
+    h2 { font-size: 15px; color: var(--muted); margin: 36px 0 12px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .paper { display: block; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); }
+    .paper:hover { border-color: var(--accent); }
+    .paper .t { font-weight: 600; line-height: 1.35; }
+    .paper .a { color: var(--muted); font-size: 13px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .paper .m { color: var(--faint); font-size: 12px; margin-top: 6px; display: flex; gap: 12px; }
+    .empty { color: var(--faint); padding: 24px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; }
+    .hint { color: var(--faint); font-size: 12.5px; margin-top: 10px; }
+    .hint code { background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+    .head { display: flex; align-items: center; gap: 12px; }
+    #user { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head"><h1><a href="/"><span class="logo-dot"></span>Library</a></h1><div id="user"></div></div>
+    <div id="app">
+    <div class="search">
+      <form id="f" role="search">
+        <input id="q" placeholder="Search a paper, or paste an arXiv link" autofocus autocomplete="off" spellcheck="false"
+          aria-label="Search papers" role="combobox" aria-controls="results" aria-expanded="false" aria-autocomplete="list">
+        <button class="btn ghost" type="button" id="up">Upload PDF</button>
+        <button class="btn primary">Read</button>
+      </form>
+      <ul class="results" id="results" role="listbox" hidden></ul>
+    </div>
+    <div class="err" id="err"></div>
+    <h2 id="library">Library</h2>
+    <div class="grid" id="list"></div>
+    </div>
+    <p class="hint" style="margin-top:40px"><a href="/">XYZNOT</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+  </div>
+  <script type="module">
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    import { requireSignIn, mountUserButton } from "/js/auth.js";
+    import { attachSearch } from "/js/search.js";
+    try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+    await requireSignIn().catch((e) => ($("#err").textContent = e.message));
+    mountUserButton($("#user"));
+    attachSearch({ form: $("#f"), input: $("#q"), list: $("#results"), tip: $("#err") });
+    $("#up").onclick = () => {
+      const input = Object.assign(document.createElement("input"), { type: "file", accept: "application/pdf" });
+      input.onchange = async () => {
+        const f = input.files[0]; if (!f) return;
+        $("#err").textContent = "Uploading…";
+        const r = await fetch("/api/upload", { method: "POST", headers: { "x-filename": encodeURIComponent(f.name) }, body: f }).then((x) => x.json());
+        if (r.key) location.href = "/paper/" + r.key; else $("#err").textContent = r.error;
+      };
+      input.click();
+    };
+    const papers = await fetch("/api/papers").then((r) => r.json());
+    $("#list").innerHTML = papers.length ? papers.map((p) => `<a class="paper" href="/paper/${esc(p.key)}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="a">${esc((p.authors || []).join(", "))}</div>
+        <div class="m"><span>${esc(p.id)}</span>${p.lastOpened ? `<span>Opened ${new Date(p.lastOpened).toLocaleDateString()}</span>` : ""}<span>Page ${p.lastPage}</span>${p.highlights ? `<span>${p.highlights} highlights</span>` : ""}</div></a>`).join("")
+      : `<div class="empty">No papers yet. Paste an arXiv link above.</div>`;
+  </script>
+</body>
+</html>

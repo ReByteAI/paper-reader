@@ -1,0 +1,90 @@
+/* Home page: warm bronze silk (same art direction as the xyznot.com company page), cream
+   Bricolage Grotesque headline, copper accent. */
+body.home {
+  --ink: #17130f; --cream: #fffaf0; --soft: #fffaf0b0; --faint: #fffaf06e; --line: #fffaf02e;
+  --copper: #e2a576; --copper-hi: #f3c6a5;
+  color-scheme: dark; background: var(--ink); color: var(--cream);
+  font: 17px/1.55 'DM Sans', system-ui, sans-serif; font-synthesis: none; overflow-x: hidden; isolation: isolate;
+}
+.home a { color: inherit; }
+.home .period { color: var(--copper); }
+
+.art, .veil { position: fixed; inset: 0; pointer-events: none; }
+.art { z-index: -3; background: var(--ink) url('/assets/silk-poster.jpg') center/cover no-repeat; }
+.art canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; opacity: 0; transition: opacity 1.5s ease; }
+.shader-ready .art canvas { opacity: 1; }
+.veil { z-index: -2; background: linear-gradient(90deg, #0c0a084f, transparent 65%), linear-gradient(0deg, #0c0a0866, transparent 30%, transparent 80%, #0c0a0829); }
+
+/* header */
+.top { position: absolute; z-index: 5; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 36px;
+  padding: max(30px, env(safe-area-inset-top)) clamp(22px, 5.2vw, 88px) 0; }
+.wordmark { font-size: 17px; font-weight: 600; letter-spacing: .14em; text-decoration: none; }
+.auth { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+#user:empty { display: none; }
+
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 42px; padding: 0 20px;
+  border: 1px solid #fffaf05c; border-radius: 999px; color: var(--cream); text-decoration: none; font-size: 15px;
+  background: #17130f30; backdrop-filter: blur(8px); transition: border-color .2s, color .2s, background .2s; white-space: nowrap; }
+.pill:hover { border-color: var(--copper-hi); color: var(--copper-hi); }
+.pill.solid { background: var(--cream); color: var(--ink); border-color: var(--cream); font-weight: 500; }
+.pill.solid:hover { background: var(--copper-hi); border-color: var(--copper-hi); color: var(--ink); }
+.pill svg, .ask button svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+
+/* hero */
+.hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: 140px clamp(22px, 9vw, 150px) 110px; }
+.home h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(54px, 8.6vw, 150px); font-weight: 600;
+  line-height: .93; letter-spacing: -.06em; margin: 0; text-shadow: 0 2px 40px #17130f18; }
+.home h1 > span { display: block; }
+.home h1 .last-word { margin-top: 6px; }
+.ask { display: flex; gap: 8px; width: min(600px, 100%); margin-top: 56px; padding: 7px; border: 1px solid #fffaf040;
+  border-radius: 999px; background: #17130f59; backdrop-filter: blur(14px); transition: border-color .2s; }
+.ask:focus-within { border-color: var(--copper-hi); }
+.ask input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--cream); font-size: 17px; padding: 0 18px; }
+.ask input::placeholder { color: var(--faint); }
+.ask button { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 24px; border: 0; border-radius: 999px;
+  background: var(--cream); color: var(--ink); font-size: 16px; font-weight: 500; cursor: pointer; transition: background .2s; }
+.ask button:hover { background: var(--copper-hi); }
+/* While suggestions are open the headline steps back so the list has room. */
+body.searching .hero { justify-content: flex-start; padding-top: max(130px, 16vh); }
+body.searching .home h1, body.home.searching h1 { font-size: clamp(40px, 4.4vw, 72px); }
+body.searching .search { margin-top: 32px; }
+.search { position: relative; width: min(640px, 100%); margin-top: 56px; }
+.search .ask { width: 100%; margin-top: 0; }
+.results { position: absolute; z-index: 4; top: calc(100% + 10px); left: 0; right: 0; margin: 0; padding: 6px; list-style: none;
+  max-height: min(56vh, 520px); overflow: auto; overscroll-behavior: contain; border: 1px solid #fffaf033; border-radius: 22px;
+  background: #1a1511eb; backdrop-filter: blur(18px); box-shadow: 0 30px 60px -24px #000c; }
+.results li { display: grid; gap: 3px; padding: 12px 16px; border-radius: 16px; cursor: pointer; }
+.results li[aria-selected=true], .results li:hover { background: #fffaf014; }
+.r-title { font-size: 15.5px; line-height: 1.35; color: var(--cream); }
+.r-meta { font-size: 12.5px; color: var(--copper-hi); letter-spacing: .02em; }
+.r-snip { font-size: 13px; line-height: 1.45; color: var(--faint); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.tip { min-height: 1.5em; margin: 16px 0 0 20px; font-size: 14px; color: var(--faint); }
+.tip b { color: var(--soft); font-weight: 500; }
+
+footer { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 22px; padding: 0 clamp(22px, 5.2vw, 88px) max(30px, env(safe-area-inset-bottom)); color: var(--faint); font-size: 13px; }
+footer a { text-decoration: none; }
+footer a:hover { color: var(--copper-hi); }
+
+#motion { position: fixed; z-index: 6; right: max(22px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 44px; height: 44px;
+  display: grid; place-items: center; border: 1px solid #fffaf04a; border-radius: 50%; background: #17130f24; color: var(--cream); cursor: pointer; backdrop-filter: blur(6px); }
+#motion[hidden] { display: none; }
+#motion svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+#motion .play { display: none; }
+#motion[aria-pressed=true] .pause { display: none; }
+#motion[aria-pressed=true] .play { display: block; }
+.home a:focus-visible, .home button:focus-visible { outline: 2px solid var(--copper-hi); outline-offset: 5px; }
+
+@media (max-width: 600px) {
+  .top { gap: 12px; }
+  .auth { margin-left: auto; }
+  .wordmark { font-size: 14px; }
+  .pill { height: 38px; padding: 0 16px; font-size: 14px; }
+  .hero { padding: 120px 22px 100px; }
+  .home h1 { font-size: clamp(44px, 13vw, 64px); line-height: 1; }
+  .home h1 > span { display: inline; }
+  .home h1 .last-word { margin: 0; }
+  .ask input { font-size: 16px; padding: 0 12px; }
+  .ask button { padding: 0 18px; height: 44px; }
+  .tip { margin-left: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .home *, .home *::before, .home *::after { transition: none !important; } }
