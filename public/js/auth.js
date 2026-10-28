@@ -68,14 +68,17 @@ export function openSignIn(next = "/library") {
 // next session token carries the new plan.
 export function showPaywall() {
   if (!clerk || document.querySelector("#paywall")) return;
+  const team = !!clerk.organization;
   const el = document.createElement("div");
   el.id = "paywall";
   el.innerHTML = `<div class="pw-card"><button class="pw-close" title="Close">×</button>
-    <h2>Upgrade to Pro</h2><p>AI explanations, figure analysis, chat with the paper, translation and citation cards.</p>
+    ${team
+      ? `<h2>Subscribe ${clerk.organization.name.replace(/[&<>"']/g, "")}</h2><p>Teams share one library, highlights and comments. $10 per member per month.</p>`
+      : `<h2>Upgrade to Pro</h2><p>AI explanations, figure analysis, chat with the paper, translation and citation cards.</p>`}
     <div class="pw-table"></div></div>`;
   document.body.append(el);
   const table = el.querySelector(".pw-table");
-  clerk.mountPricingTable(table, { newSubscriptionRedirectUrl: location.href });
+  clerk.mountPricingTable(table, { forOrganizations: team, for: team ? "organizations" : "users", newSubscriptionRedirectUrl: location.href }); // clerk-js 5 reads forOrganizations
   const close = () => { clerk.unmountPricingTable(table); el.remove(); };
   el.querySelector(".pw-close").onclick = close;
   el.addEventListener("pointerdown", (e) => { if (e.target === el) close(); });

@@ -27,7 +27,7 @@ LaTeX and auto-highlight.
 |---|---|
 | Clerk app `xyznot.com` (production instance, `clerk.xyznot.com`) | Sign-in. The Worker verifies the session JWT against the instance JWKS (`lib/auth.js`). |
 | Clerk Organizations | Teams. With an organization active (switcher on the library page), the library, uploads, highlights, comments, explanations and saved citations belong to the team; notes, chat and reading position stay per member (`users/<org>/<key>.members/<uid>.json`). Saves merge per item (`lib/state.js`); open readers pull teammates' changes every 15 s. |
-| Clerk Billing | `PAID_PLAN` empty: AI is free for everyone (personal plan is free). Set it to a plan slug to gate `/api/ai/*` again; `FREE_USERS` lists exempt Clerk user ids. |
+| Clerk Billing | Teams need the organization plan `TEAM_PLAN` (`team`: $10 per member per month, seat-based, up to 20 members); an unsubscribed team gets 402 and the team pricing table. `PAID_PLAN` empty: AI is free for everyone (personal plan is free). Set it to a plan slug to gate `/api/ai/*` again; `FREE_USERS` lists exempt Clerk user ids. |
 | R2 bucket `paper-reader` | Shared: `pdfs/`, `uploads/`, `meta/`, `text/`, `cache/`. Per user: `users/<uid>/<key>.json` = reading state of one paper. |
 | D1 database `paper-reader` | `library` table: which papers each user has, with title, last opened, page, highlight count (`migrations/`). |
 | Worker secret | `GEMINI_API_KEY` (`wrangler secret put GEMINI_API_KEY`). |

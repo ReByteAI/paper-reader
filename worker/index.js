@@ -51,6 +51,7 @@ export default {
       model: env.GEMINI_MODEL,
       verify: createVerifier({ publishableKey: env.CLERK_PUBLISHABLE_KEY, authorizedParties: env.AUTH_ORIGINS.split(",") }),
       paidPlan: env.PAID_PLAN,
+      teamPlan: env.TEAM_PLAN,
       freeUsers: (env.FREE_USERS || "").split(",").filter(Boolean),
       publicConfig: { clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY },
       searchKey: env.QUERIT_API_KEY,
