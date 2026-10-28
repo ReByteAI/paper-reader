@@ -19,6 +19,15 @@ try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElemen
 
 app.key = decodeURIComponent(location.pathname.split("/paper/")[1] || "");
 
+// Answer and translation languages (names in their own script). Codes match LANG in lib/prompts.js.
+const LANGS = [
+  ["zh", "简体中文"], ["zh-TW", "繁體中文"], ["en", "English"], ["ja", "日本語"], ["ko", "한국어"],
+  ["ar", "العربية"], ["fa", "فارسی"], ["he", "עברית"], ["hi", "हिन्दी"], ["bn", "বাংলা"],
+  ["th", "ไทย"], ["vi", "Tiếng Việt"], ["id", "Bahasa Indonesia"], ["ms", "Bahasa Melayu"],
+  ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"], ["pt", "Português"], ["it", "Italiano"],
+  ["nl", "Nederlands"], ["pl", "Polski"], ["ru", "Русский"], ["uk", "Українська"], ["tr", "Türkçe"],
+];
+
 // ---------- top bar ----------
 
 function buildTopbar() {
@@ -58,7 +67,7 @@ function buildTopbar() {
     </div>
     <div class="dropdown" id="dd-settings" popover="auto">
       <label class="row">Answer language<select id="set-lang" class="select">
-        ${[["zh", "中文"], ["en", "English"], ["ja", "日本語"], ["ko", "한국어"], ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"]].map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}
+        ${LANGS.map(([v, n]) => `<option value="${v}">${n}</option>`).join("")}
       </select></label>
       <label class="row">Translation model<select id="set-trmodel" class="select">
         <option value="lite">Fast · Flash Lite</option><option value="flash">Better · Flash 3.8</option>
@@ -96,7 +105,9 @@ function wireTopbar() {
     if (opt) zoomSel.value = opt.value;
     else { zoomSel.querySelector("[value=custom]").textContent = Math.round(scale * 100) + "%"; zoomSel.value = "custom"; }
     placeAllSoon();
+    saveViewSoon();
   });
+  v.container.addEventListener("scroll", saveViewSoon, { passive: true });
   addEventListener("keydown", (e) => {
     if (!(e.metaKey || e.ctrlKey)) return;
     if (e.key === "=" || e.key === "+") { e.preventDefault(); step(1); }
@@ -181,6 +192,30 @@ async function guessTitle(pdf) {
   }
   line = line.replace(/\s+/g, " ").trim();
   return line.length >= 8 ? line.slice(0, 300) : "";
+}
+
+// Zoom and scroll position per paper, remembered in this browser (localStorage "pr-view:<key>").
+// The position is a page number plus how far down that page the view starts (0..1).
+const viewKey = () => "pr-view:" + app.key;
+let viewReady = false; // no saving while the saved view is being restored on open
+function saveView() {
+  const v = app.viewer, page = v?.currentPageNumber, div = page && v.getPageView(page - 1)?.div;
+  if (!div || !viewReady) return;
+  const offset = Math.min(1, Math.max(0, (v.container.scrollTop - div.offsetTop) / div.offsetHeight));
+  try { localStorage.setItem(viewKey(), JSON.stringify({ scale: v.currentScaleValue, page, offset })); } catch {}
+}
+const saveViewSoon = debounce(saveView, 400);
+
+function restoreView() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(viewKey()) || "null"); } catch {}
+  const v = app.viewer;
+  if (!saved?.scale || !(saved.page >= 1 && saved.page <= app.pdf.numPages)) return false;
+  v.currentScaleValue = saved.scale;
+  // PDF.js lays the pages out again after a scale change; scrollPageIntoView waits for that.
+  const height = v.getPageView(saved.page - 1).viewport.viewBox[3];
+  v.scrollPageIntoView({ pageNumber: saved.page, destArray: [null, { name: "XYZ" }, null, (1 - (saved.offset || 0)) * height, null] });
+  return true;
 }
 
 // Scale so that page + translation column fit side by side.
@@ -286,6 +321,8 @@ async function boot() {
   Object.assign(app, { viewer, eventBus, linkService, findController });
 
   eventBus.on("pagesinit", () => {
+    setTimeout(() => (viewReady = true), 1000);
+    if (restoreView()) return;
     viewer.currentScaleValue = app.settings.translate ? fitTwoUp() : "auto";
     if (app.state.lastPage > 1) viewer.currentPageNumber = app.state.lastPage;
   });

@@ -283,3 +283,6 @@ dialog.dialog.picker { width: min(560px, calc(100vw - 32px)); }
 .q-exp { margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); font-size: 12.5px; }
 .q-score { position: sticky; bottom: 0; padding: 10px 0 2px; background: var(--panel); color: var(--muted); font-size: 12.5px; }
 .list-item.rel { cursor: default; }
+
+/* Right-to-left answer languages (Arabic, Persian, Hebrew): each paragraph takes the direction of its text. */
+.tr-col p, .md p, .md li, .md blockquote, .md h1, .md h2, .md h3, .msg.user > div, .kw-def, .q-text, .q-opt { unicode-bidi: plaintext; text-align: start; }
