@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Reader</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <style>
+    body { background: var(--canvas-bg); min-height: 100vh; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 72px 16px 60px; }
+    h1 { display: flex; align-items: center; gap: 12px; font-size: 28px; margin: 0 0 6px; }
+    .logo-dot { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #a99bff, var(--accent) 55%, #2b1f7a); }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    #f { display: flex; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 8px; box-shadow: var(--shadow); }
+    #f input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px; padding: 0 10px; }
+    #f .btn { height: 40px; padding: 0 16px; font-size: 14px; }
+    .err { color: #d33; min-height: 20px; margin: 8px 4px; font-size: 13px; }
+    h2 { font-size: 15px; color: var(--muted); margin: 36px 0 12px; font-weight: 600; }
+    .grid { display: grid; gap: 10px; }
+    .paper { display: block; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); }
+    .paper:hover { border-color: var(--accent); }
+    .paper .t { font-weight: 600; line-height: 1.35; }
+    .paper .a { color: var(--muted); font-size: 13px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .paper .m { color: var(--faint); font-size: 12px; margin-top: 6px; display: flex; gap: 12px; }
+    .empty { color: var(--faint); padding: 24px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; }
+    .hint { color: var(--faint); font-size: 12.5px; margin-top: 10px; }
+    .hint code { background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+    .head { display: flex; align-items: center; gap: 12px; }
+    #user { margin-left: auto; }
+    #signin { display: flex; justify-content: center; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head"><h1><span class="logo-dot"></span>Paper Reader</h1><div id="user"></div></div>
+    <p class="sub">Paste an arXiv link or ID. Read with in-place citations, figure explanations, highlights and an AI that has read the whole paper.</p>
+    <div id="signin" hidden></div>
+    <div id="app" hidden>
+    <form id="f">
+      <input id="q" placeholder="https://arxiv.org/abs/1706.03762  or  2607.24653" autofocus autocomplete="off">
+      <button class="btn ghost" type="button" id="up">Upload PDF</button>
+      <button class="btn primary">Read</button>
+    </form>
+    <div class="err" id="err"></div>
+    <div class="hint">Tip: replace <code>arxiv.org</code> in any arXiv URL with <code class="host"></code>, e.g. <code><span class="host"></span>/abs/1706.03762</code>.</div>
+    <h2 id="library">Library</h2>
+    <div class="grid" id="list"></div>
+    </div>
+    <p class="hint" style="margin-top:40px"><a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+  </div>
+  <script type="module">
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    import { initAuth, signedIn, mountSignIn, mountUserButton } from "/js/auth.js";
+    try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+    document.querySelectorAll(".host").forEach((el) => (el.textContent = location.host));
+    await initAuth().catch((e) => ($("#err").textContent = e.message));
+    if (!signedIn()) {
+      $("#signin").hidden = false;
+      mountSignIn($("#signin"));
+      await new Promise(() => {});
+    }
+    const next = new URLSearchParams(location.search).get("redirect");
+    if (next && next.startsWith("/")) location.replace(next);
+    $("#app").hidden = false;
+    mountUserButton($("#user"));
+    $("#f").onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await fetch("/api/resolve?q=" + encodeURIComponent($("#q").value)).then((x) => x.json());
+      if (r.key) location.href = "/paper/" + r.key; else $("#err").textContent = r.error;
+    };
+    $("#up").onclick = () => {
+      const input = Object.assign(document.createElement("input"), { type: "file", accept: "application/pdf" });
+      input.onchange = async () => {
+        const f = input.files[0]; if (!f) return;
+        $("#err").textContent = "Uploading…";
+        const r = await fetch("/api/upload", { method: "POST", headers: { "x-filename": encodeURIComponent(f.name) }, body: f }).then((x) => x.json());
+        if (r.key) location.href = "/paper/" + r.key; else $("#err").textContent = r.error;
+      };
+      input.click();
+    };
+    const papers = await fetch("/api/papers").then((r) => r.json());
+    $("#list").innerHTML = papers.length ? papers.map((p) => `<a class="paper" href="/paper/${esc(p.key)}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="a">${esc((p.authors || []).join(", "))}</div>
+        <div class="m"><span>${esc(p.id)}</span>${p.lastOpened ? `<span>Opened ${new Date(p.lastOpened).toLocaleDateString()}</span>` : ""}<span>Page ${p.lastPage}</span>${p.highlights ? `<span>${p.highlights} highlights</span>` : ""}</div></a>`).join("")
+      : `<div class="empty">No papers yet. Paste an arXiv link above.</div>`;
+  </script>
+</body>
+</html>

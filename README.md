@@ -1,0 +1,71 @@
+# Paper Reader
+
+A paper reader for arXiv papers and any PDF. PDF.js renders the paper;
+our overlay layers add sentence hover, highlights, in-place citation cards, figure explanations and an
+AI panel. Gemini powers the AI features.
+
+```sh
+npm install
+npm start            # http://localhost:5178
+```
+
+Open a paper by pasting an arXiv link on the home page, or go to `localhost:5178/abs/<id>`.
+
+## Gemini key
+
+The server reads `GEMINI_API_KEY` from the environment, then from `./.env`, `~/.gemini-video.env`,
+`~/.env.impo-gemini` or `~/.env` (first match). Models: `GEMINI_MODEL` (default `gemini-3.8-flash`)
+for explanations and chat, `GEMINI_FAST_MODEL` (default `gemini-3.5-flash-lite`) for translation,
+LaTeX and auto-highlight.
+
+## Deploy (Cloudflare)
+
+`npm run deploy` builds `dist/` (public/ + vendor files) and deploys the Worker `paper-reader` to
+`https://paper.xyznot.com`. The Worker runs the same routes as the local server (`lib/core.js`).
+
+| Piece | What |
+|---|---|
+| Clerk app `xyznot.com` (production instance, `clerk.xyznot.com`) | Sign-in. The Worker verifies the session JWT against the instance JWKS (`lib/auth.js`). |
+| Clerk Billing | AI routes (`/api/ai/*`) need plan slug `PAID_PLAN` (`pro`, $10/month); `FREE_USERS` lists exempt Clerk user ids. Free users can read, highlight, comment and take notes. |
+| R2 bucket `paper-reader` | Shared: `pdfs/`, `uploads/`, `meta/`, `text/`, `cache/`. Per user: `users/<uid>/<key>.json` = reading state of one paper. |
+| D1 database `paper-reader` | `library` table: which papers each user has, with title, last opened, page, highlight count (`migrations/`). |
+| Worker secret | `GEMINI_API_KEY` (`wrangler secret put GEMINI_API_KEY`). |
+
+Uploaded PDFs are only readable by users who uploaded them; arXiv papers are open to all signed-in users.
+Locally, `npm start` runs without sign-in as user `local`; set `CLERK_PUBLISHABLE_KEY` to require Clerk.
+
+## Interactions
+
+| Where | What |
+|---|---|
+| Select text | Popover menu: Explain `E`, 5 highlight colors `H`, Translate `T`, Comment `C`, Ask AI `Enter`, Copy, `Esc` |
+| Click a highlight | Change color, comment, explain, ask, copy, delete |
+| Click `[12]` | Card with the parsed reference + Semantic Scholar / OpenAlex match, "Read here" for arXiv papers |
+| Click a figure/section link | Rendered preview of the target region; "Go to" jumps |
+| Hover a figure / table / equation | Dashed box; Explain `E`, Copy image `C`, Copy LaTeX (equations) |
+| Hover text | Sentence under the cursor is lit (toggle in Settings) |
+| Auto Highlight | Marks novelty / method / result sentences |
+| Translate | Side-by-side column per page; hovering either side lights the matching sentence on the other |
+| Left rail | Expands on hover; Home, Library, Upload PDF, Outline, Paper info, Dark mode |
+| Right rail | With AI (reading guide + chat over the full paper), Highlights, Explanations, Comments, Notes, Citations; drag the left edge to resize |
+| Zoom | Presets, ⌘+/⌘−/⌘0, ctrl/pinch wheel; overlays and cards stay anchored |
+
+## Layout
+
+```
+lib/core.js          Routes: arXiv PDF + metadata cache, Gemini proxy, Scholar search, per-paper state
+lib/auth.js          Clerk session JWT verification
+server.js            Local Node server: disk stores under data/ + static files
+worker/index.js      Cloudflare Worker: R2 + D1 stores, Clerk config, static assets
+migrations/          D1 schema
+public/js/auth.js    Clerk sign-in, token on /api requests, Pro paywall
+lib/prompts.js       Prompt for every AI task
+public/js/app.js     Shared context, page-fraction geometry, overlay layers, anchored cards
+public/js/sentences.js   Text layer → sentences (Range rects), hover state, auto highlight
+public/js/selection.js   Selection popover, highlights, comments, explain/translate cards
+public/js/citations.js   Internal link interception → citation and preview cards
+public/js/figures.js     Gemini layout detection → figure/table/equation hover tools
+public/js/panels.js      Left rail, outline, right panel tabs, chat, notes
+public/js/translate.js   Translation column with <|#n|> sentence markers
+data/                PDFs, metadata, AI cache and user state (git-ignored)
+```

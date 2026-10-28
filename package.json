@@ -1,0 +1,20 @@
+{
+  "name": "paper-reader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "deploy": "sh scripts/build-worker.sh && wrangler deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "katex": "^0.16.11",
+    "marked": "^12.0.2",
+    "pdfjs-dist": "^4.10.38"
+  }
+}

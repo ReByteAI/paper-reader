@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paper Reader</title>
+  <link rel="stylesheet" href="/vendor/pdfjs/web/pdf_viewer.css">
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="/css/reader.css">
+</head>
+<body>
+  <header id="topbar"></header>
+  <aside id="leftrail"></aside>
+  <aside id="outline" class="side-panel"></aside>
+
+  <main id="main">
+    <div id="viewerContainer">
+      <div id="viewer" class="pdfViewer"></div>
+    </div>
+    <div id="status">Loading…</div>
+  </main>
+
+  <section id="rightpanel">
+    <div id="rp-resize" title="Drag to resize"></div>
+    <div class="rp-head"><span id="rp-title"></span><span class="grow"></span>
+      <button class="icon-btn" id="rp-close" title="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div id="rp-body"></div>
+  </section>
+  <aside id="rightrail"></aside>
+
+  <script type="module" src="/js/reader.js"></script>
+</body>
+</html>

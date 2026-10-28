@@ -1,0 +1,22 @@
+{
+  "name": "paper-reader",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "account_id": "34431cd51da281ed3590ab6ce5141d09",
+  "assets": { "directory": "./dist", "binding": "ASSETS", "html_handling": "none", "run_worker_first": true },
+  "r2_buckets": [{ "binding": "PAPERS", "bucket_name": "paper-reader" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "paper-reader", "database_id": "44cff9c0-ceac-4609-9724-6c18fb92d400", "migrations_dir": "migrations" }],
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.8-flash",
+    "GEMINI_FAST_MODEL": "gemini-3.5-flash-lite",
+    // Clerk application "xyznot.com" (production instance, Frontend API clerk.xyznot.com).
+    "CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsueHl6bm90LmNvbSQ",
+    "AUTH_ORIGINS": "https://paper.xyznot.com,http://localhost:5178",
+    // Clerk Billing plan slug that unlocks AI routes, and Clerk user ids that get AI for free (owner).
+    "PAID_PLAN": "pro",
+    "FREE_USERS": "user_3LIzmi9iCEL03k6KSsp0t6GkSlJ"
+  },
+  "routes": [{ "pattern": "paper.xyznot.com", "custom_domain": true }],
+  "observability": { "enabled": true }
+}
