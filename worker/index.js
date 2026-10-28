@@ -38,6 +38,18 @@ const d1Users = (db) => ({
   },
 });
 
+// Member count of a Clerk organization (Backend API), cached for a minute per isolate.
+const sizes = new Map();
+async function orgSize(env, id) {
+  const hit = sizes.get(id);
+  if (hit && Date.now() - hit.at < 60_000) return hit.n;
+  const r = await fetch(`https://api.clerk.com/v1/organizations/${encodeURIComponent(id)}`, { headers: { authorization: `Bearer ${env.CLERK_SECRET_KEY}` } });
+  if (!r.ok) return 2; // unknown: treat as a paying team, do not cache
+  const n = (await r.json()).members_count ?? 2;
+  sizes.set(id, { n, at: Date.now() });
+  return n;
+}
+
 let handle;
 export default {
   fetch(req, env) {
@@ -52,6 +64,7 @@ export default {
       verify: createVerifier({ publishableKey: env.CLERK_PUBLISHABLE_KEY, authorizedParties: env.AUTH_ORIGINS.split(",") }),
       paidPlan: env.PAID_PLAN,
       teamPlan: env.TEAM_PLAN,
+      teamSize: (id) => orgSize(env, id),
       freeUsers: (env.FREE_USERS || "").split(",").filter(Boolean),
       publicConfig: { clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY },
       searchKey: env.QUERIT_API_KEY,

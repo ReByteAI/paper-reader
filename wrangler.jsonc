@@ -16,7 +16,8 @@
     // Clerk Billing plan slug that unlocks AI routes; empty means AI is free for everyone (the
     // personal plan is free). FREE_USERS: Clerk user ids that never pay (owner).
     "PAID_PLAN": "",
-    // Clerk Billing organization plan for teams: $10 per member per month, up to 20 members.
+    // Clerk Billing organization plan for teams of two or more: $10 per member per month, up to
+    // 20 members. A one-member team is free. Needs the CLERK_SECRET_KEY secret (member counts).
     "TEAM_PLAN": "team",
     "FREE_USERS": "user_3LIzmi9iCEL03k6KSsp0t6GkSlJ"
   },

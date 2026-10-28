@@ -89,7 +89,7 @@
     };
     // A team without the Team plan sees the subscription prompt instead of its library.
     if (me.team && !me.teamPaid) {
-      $("#list").innerHTML = `<div class="empty">This team needs the Team plan ($10 per member per month) to share a library.<br><br><button class="btn primary" id="subscribe">Subscribe the team</button></div>`;
+      $("#list").innerHTML = `<div class="empty">Teams of two or more need the Team plan ($10 per member per month) to share a library.<br><br><button class="btn primary" id="subscribe">Subscribe the team</button></div>`;
       $("#subscribe").onclick = () => showPaywall();
     }
     const papers = me.team && !me.teamPaid ? null : await fetch("/api/papers").then((r) => r.json());
