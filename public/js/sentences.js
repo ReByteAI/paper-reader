@@ -118,7 +118,7 @@ function hoverIdsFor(i) {
 addPainter("hover", (i, el) => {
   const ss = pageInfo(i).sentences;
   const ids = hoverIdsFor(i);
-  const show = app.settings.sentenceFocus || (app.settings.translate && app.settings.trLayout === "side");
+  const show = app.settings.sentenceFocus;
   el.innerHTML = !ss || !show ? "" : ids.flatMap((k) => (ss[k]?.rects || []).map((r) => `<div class="sentence-box" style="${rectStyle(r)}"></div>`)).join("");
 });
 

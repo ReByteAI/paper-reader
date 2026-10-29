@@ -110,7 +110,7 @@ addEventListener("resize", follow);
 export function initSelection() {
   const vc = app.viewer.container;
   vc.addEventListener("mouseup", (e) => {
-    if (e.button !== 0 || e.target.closest(".ml-card, .tr-col, .fig-tools")) return;
+    if (e.button !== 0 || e.target.closest(".ml-card, .tr-page, .fig-tools")) return;
     setTimeout(() => {
       current = snapshot();
       if (current) { hideHlMenu(); showMenu(e.clientX, e.clientY); } else hideMenu();
@@ -131,7 +131,7 @@ export function initSelection() {
 
   // Click on an existing highlight → highlight menu.
   vc.addEventListener("click", (e) => {
-    if (!getSelection().isCollapsed || e.target.closest(".ml-card, .tr-col, .fig-tools, a, button")) return;
+    if (!getSelection().isCollapsed || e.target.closest(".ml-card, .tr-page, .fig-tools, a, button")) return;
     const i = pageAtPoint(e.clientX, e.clientY);
     if (i < 0) return;
     const p = clientToPage(i, e.clientX, e.clientY);

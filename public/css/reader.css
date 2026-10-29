@@ -132,14 +132,15 @@ html.inl-on:not(.inl-peek) .ml-autohl { display: none; }
 :root[data-theme="dark"] .inl-layer { filter: invert(.88) hue-rotate(180deg); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .inl-layer { filter: invert(.88) hue-rotate(180deg); } }
 html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
-.tr-col { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; overflow: auto; background: var(--panel); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.12); padding: 6% 7%; font-size: calc(var(--scale-factor, 1) * 10.5px); line-height: 1.7; color: var(--text); font-family: var(--tr-font), Georgia, serif; }
-.tr-col p { margin: 0 0 .8em; }
-.tr-redo { position: sticky; top: 0; float: right; margin: -4% -5% 0 8px; width: 28px; height: 28px; opacity: .35; transition: opacity .15s; }
-.tr-col:hover .tr-redo, .tr-redo:focus-visible { opacity: 1; }
+/* Side by side: a copy of the page to the right, with the translation in place. */
+.tr-page { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tr-page > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tr-page .inl-block.on, .inl-mirror { box-shadow: 0 0 0 2px rgba(120, 140, 255, .45); border-radius: 2px; }
+.inl-mirror { position: absolute; background: rgba(120, 140, 255, .08); pointer-events: none; }
+.tr-redo { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; opacity: .35; transition: opacity .15s; background: var(--panel); }
+.tr-page:hover .tr-redo, .tr-redo:focus-visible { opacity: 1; }
 .tr-redo:disabled { opacity: .2; cursor: default; }
 @media (hover: none) { .tr-redo { opacity: .7; } }
-.tr-seg { border-radius: 3px; transition: background 80ms; cursor: default; }
-.tr-seg:hover, .tr-seg.active { background: rgba(150, 150, 150, .25); }
 
 /* ---------- floating cards ---------- */
 .ml-card { position: absolute; z-index: 60; width: 420px; max-height: min(62vh, 640px); display: flex; flex-direction: column; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); opacity: 0; translate: 0 -4px; transition: opacity 120ms, translate 120ms; font-size: 13.5px; }
@@ -307,4 +308,4 @@ dialog.dialog.picker { width: min(560px, calc(100vw - 32px)); }
 .list-item.rel { cursor: default; }
 
 /* Right-to-left answer languages (Arabic, Persian, Hebrew): each paragraph takes the direction of its text. */
-.tr-col p, .md p, .md li, .md blockquote, .md h1, .md h2, .md h3, .msg.user > div, .kw-def, .q-text, .q-opt { unicode-bidi: plaintext; text-align: start; }
+.md p, .md li, .md blockquote, .md h1, .md h2, .md h3, .msg.user > div, .kw-def, .q-text, .q-opt { unicode-bidi: plaintext; text-align: start; }

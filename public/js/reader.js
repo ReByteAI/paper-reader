@@ -8,6 +8,7 @@ import { initCitations } from "./citations.js";
 import { detectFigures, figureAt, setFigureHover } from "./figures.js";
 import { initLeftRail, initRightPanel, initLayout, toggleOutline, ensureFullText } from "./panels.js";
 import { translatePage, setTranslate, resetTranslations } from "./translate.js";
+import { sideOn, blockAt, setBlockHover } from "./inline.js";
 import { requireSignIn, authHeaders, me, showPaywall } from "./auth.js";
 import { initExport, editPersona } from "./extras.js";
 
@@ -265,19 +266,20 @@ function initHover() {
     pending = e;
     requestAnimationFrame(() => {
       const ev = pending; pending = null;
-      if (ev.buttons || ev.target.closest(".ml-card, .tr-col")) return;
+      if (ev.buttons || ev.target.closest(".ml-card, .tr-page")) return;
       const i = pageAtPoint(ev.clientX, ev.clientY);
-      if (i < 0) { setFigureHover(-1, -1); return; }
+      if (i < 0) { setFigureHover(-1, -1); setBlockHover(-1, -1); return; }
       const p = clientToPage(i, ev.clientX, ev.clientY);
       const fk = figureAt(i, p);
       setFigureHover(i, fk);
-      if (!(app.settings.sentenceFocus || (app.settings.translate && app.settings.trLayout === "side"))) return;
+      if (sideOn()) setBlockHover(i, fk >= 0 ? -1 : blockAt(i, p));
+      if (!app.settings.sentenceFocus) return;
       const s = fk >= 0 ? -1 : sentenceAt(i, p);
       if (s >= 0) setHover(i, [s], "pdf");
       else if (hover.from === "pdf") setHover(-1, [], "pdf");
     });
   });
-  app.viewer.container.addEventListener("mouseleave", () => { setHover(-1, [], "pdf"); setFigureHover(-1, -1); });
+  app.viewer.container.addEventListener("mouseleave", () => { setHover(-1, [], "pdf"); setFigureHover(-1, -1); setBlockHover(-1, -1); });
 }
 
 // ---------- boot ----------
