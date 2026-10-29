@@ -31,10 +31,23 @@ LaTeX and auto-highlight.
 | R2 bucket `paper-reader` | Shared: `pdfs/`, `uploads/`, `meta/`, `text/`, `cache/`. Per user: `users/<uid>/<key>.json` = reading state of one paper. |
 | D1 database `paper-reader` | `library` table: which papers each user has, with title, last opened, page, highlight count (`migrations/`). |
 | Worker secret | `GEMINI_API_KEY` (`wrangler secret put GEMINI_API_KEY`). |
+| Durable Object `GeminiProxy` | Gemini refuses some regions (e.g. Hong Kong) and a Worker runs where the visitor is, so every Gemini call goes through a Durable Object placed in North America (`worker/index.js`). |
+| Cron (every 15 min) | Public paper pages: adds the classics and Hugging Face's daily trending papers to `seo/featured.json`, writes the English overview from the full text, then translates it into 15 languages (`lib/seo.js`, `refreshFeatured` in `lib/core.js`). The owner can run it now with `POST /api/admin/seo-refresh?max=N`. |
 | Worker secret | `QUERIT_API_KEY`: home page paper search (Querit, restricted to arXiv and open proceedings sites; 20 searches/min per IP via the `SEARCH_LIMIT` rate limiter). |
 
 Uploaded PDFs are only readable by users who uploaded them; arXiv papers are open to all signed-in users.
 Locally, `npm start` runs without sign-in as user `local`; set `CLERK_PUBLISHABLE_KEY` to require Clerk.
+
+## Public paper pages (SEO)
+
+Signed-out visitors and crawlers who open `/paper/<id>` get a server-rendered overview instead of the
+reader (the Clerk cookie `__client_uat` tells them apart): title, authors, abstract and, for featured
+papers, a three-line summary, reading guide, key terms and FAQ. `/<lang>/paper/<id>` is the same page
+in zh, zh-tw, ja, ko, es, fr, de, pt, ru, ar, th, vi, id, tr or hi. Pages carry hreflang links,
+`citation_*` tags (Google Scholar), Open Graph and JSON-LD (`ScholarlyArticle`, `BreadcrumbList`).
+Papers without an overview are `noindex`. `/papers` and `/<lang>/papers` list the featured papers;
+`/sitemap.xml` is an index of one sitemap per language. Search Console: domain property `xyznot.com`
+(DNS TXT verification), sitemap submitted.
 
 ## Interactions
 

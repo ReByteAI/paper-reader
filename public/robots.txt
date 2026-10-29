@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /library
+Disallow: /open
+
+Sitemap: https://xyznot.com/sitemap.xml

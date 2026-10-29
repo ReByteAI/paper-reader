@@ -50,30 +50,49 @@ async function orgSize(env, id) {
   return n;
 }
 
+// Gemini refuses some regions (e.g. Hong Kong), and a Worker runs where the visitor is. Gemini calls
+// therefore go through a Durable Object placed in North America, which makes the request there.
+export class GeminiProxy {
+  fetch(req) { return fetch(req); }
+}
+const aiFetch = (env) => (url, init) => {
+  const ns = env.GEMINI_PROXY;
+  const stub = ns.get(ns.idFromName("wnam-" + Math.floor(Math.random() * 8)), { locationHint: "wnam" });
+  return stub.fetch(new Request(url, init));
+};
+
 let handle;
+function handler(env) {
+  return handle ||= createHandler({
+    store: r2Store(env.PAPERS),
+    users: d1Users(env.DB),
+    apiKey: env.GEMINI_API_KEY,
+    aiFetch: aiFetch(env),
+    model: env.GEMINI_MODEL,
+    verify: createVerifier({ publishableKey: env.CLERK_PUBLISHABLE_KEY, authorizedParties: env.AUTH_ORIGINS.split(",") }),
+    paidPlan: env.PAID_PLAN,
+    teamPlan: env.TEAM_PLAN,
+    teamSize: (id) => orgSize(env, id),
+    freeUsers: (env.FREE_USERS || "").split(",").filter(Boolean),
+    publicConfig: { clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY },
+    searchKey: env.QUERIT_API_KEY,
+    searchAllowed: async (r) => (await env.SEARCH_LIMIT.limit({ key: r.headers.get("cf-connecting-ip") || "" })).success,
+    asset: async (p) => {
+        const r = await env.ASSETS.fetch(new URL(p, "https://assets.local"));
+      return r.status === 404 ? null : r;
+    },
+  });
+}
+
 export default {
   fetch(req, env) {
     // The app moved from paper.xyznot.com to the apex; keep old links working.
     const url = new URL(req.url);
     if (url.hostname === "paper.xyznot.com") return Response.redirect("https://xyznot.com" + url.pathname + url.search, 301);
-    handle ||= createHandler({
-      store: r2Store(env.PAPERS),
-      users: d1Users(env.DB),
-      apiKey: env.GEMINI_API_KEY,
-      model: env.GEMINI_MODEL,
-      verify: createVerifier({ publishableKey: env.CLERK_PUBLISHABLE_KEY, authorizedParties: env.AUTH_ORIGINS.split(",") }),
-      paidPlan: env.PAID_PLAN,
-      teamPlan: env.TEAM_PLAN,
-      teamSize: (id) => orgSize(env, id),
-      freeUsers: (env.FREE_USERS || "").split(",").filter(Boolean),
-      publicConfig: { clerkPublishableKey: env.CLERK_PUBLISHABLE_KEY },
-      searchKey: env.QUERIT_API_KEY,
-      searchAllowed: async (r) => (await env.SEARCH_LIMIT.limit({ key: r.headers.get("cf-connecting-ip") || "" })).success,
-      asset: async (p) => {
-        const r = await env.ASSETS.fetch(new URL(p, "https://assets.local"));
-        return r.status === 404 ? null : r;
-      },
-    });
-    return handle(req);
+    return handler(env)(req);
+  },
+  // Every 15 minutes: featured papers for the public pages (classics + Hugging Face trending), see lib/seo.js.
+  scheduled(event, env, ctx) {
+    ctx.waitUntil(handler(env).refreshFeatured().then((r) => console.log("[featured]", JSON.stringify(r))));
   },
 };

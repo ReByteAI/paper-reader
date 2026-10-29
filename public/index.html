@@ -11,7 +11,17 @@
   <meta property="og:title" content="XYZNOT — read papers like you wrote them">
   <meta property="og:description" content="An arXiv reader with in-place citations, figure explanations and an assistant that has read the whole paper.">
   <meta property="og:url" content="https://xyznot.com/">
+  <meta property="og:image" content="https://xyznot.com/assets/logo-512.png">
+  <link rel="alternate" hreflang="en" href="https://xyznot.com/">
+  <link rel="alternate" hreflang="x-default" href="https://xyznot.com/">
   <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/logo-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="/assets/logo-512.png">
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+    {"@type":"WebSite","@id":"https://xyznot.com/#website","name":"XYZNOT","alternateName":"xyznot.com","url":"https://xyznot.com/","inLanguage":"en","publisher":{"@id":"https://xyznot.com/#org"}},
+    {"@type":"Organization","@id":"https://xyznot.com/#org","name":"XYZNOT","url":"https://xyznot.com/","logo":"https://xyznot.com/assets/logo-512.png"},
+    {"@type":"SoftwareApplication","name":"XYZNOT","applicationCategory":"EducationalApplication","operatingSystem":"Web","url":"https://xyznot.com/","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"An arXiv paper reader with full-text translation into 24 languages, in-place citations, figure explanations and an assistant that has read the whole paper."}
+  ]}</script>
   <link rel="preload" href="/assets/font-2.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/fonts.css">
   <link rel="stylesheet" href="/css/base.css">
@@ -45,6 +55,7 @@
   </main>
 
   <footer>
+    <a href="/papers">Papers</a>
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
   </footer>
@@ -81,7 +92,10 @@
       $("#signin").hidden = true;
       $("#open").hidden = false;
       mountUserButton($("#user"));
-      if (params.has("import")) open({ kind: "pdf", url: params.get("import"), title: params.get("title") || "Paper" });
+      // Signed in already (e.g. "Read" on a public paper page): go straight on.
+      const next = params.get("redirect");
+      if (params.has("signin") && next?.startsWith("/") && !next.startsWith("//")) location.replace(next);
+      else if (params.has("import")) open({ kind: "pdf", url: params.get("import"), title: params.get("title") || "Paper" });
     } else if (params.has("signin")) {
       openSignIn(params.get("redirect") || "/library");
     }
