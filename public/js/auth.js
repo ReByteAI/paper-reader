@@ -31,8 +31,13 @@ export async function initAuth() {
 
 export const signedIn = () => !clerk || !!clerk.user;
 
+// The server reads the workspace from the token's `o` claim. Right after a workspace switch, Clerk
+// can hand back the previous workspace's token (it seeds its cache from the last token the server
+// minted), so a token whose claim does not match the active organization is minted again.
+const tokenOrg = (t) => { try { return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).o?.id || ""; } catch { return ""; } };
 export async function authHeaders() {
-  const token = await clerk?.session?.getToken();
+  let token = await clerk?.session?.getToken();
+  if (token && tokenOrg(token) !== (clerk.organization?.id || "")) token = await clerk.session.getToken({ skipCache: true });
   return token ? { authorization: `Bearer ${token}` } : {};
 }
 
@@ -86,7 +91,8 @@ export function showPaywall() {
 
 // Workspace switcher: personal library or a team (Clerk organization). clerk-js 5.128 switches the
 // active organization only in memory, so a reload fell back to the old one; the choice is saved
-// on the session through the Frontend API, then the page reloads so every request carries it.
+// on the session through the Frontend API, a token for it is minted, then the page reloads so every
+// request carries it.
 async function saveActiveOrg(id) {
   await fetch(`https://${fapi}/v1/client/sessions/${clerk.session.id}/touch`, {
     method: "POST", credentials: "include",
@@ -102,7 +108,7 @@ export function mountWorkspaceSwitcher(el) {
     const id = organization?.id || "";
     if (id === current) return;
     current = id;
-    saveActiveOrg(id).finally(() => location.reload());
+    saveActiveOrg(id).then(() => clerk.session.getToken({ skipCache: true })).finally(() => location.reload());
   });
   return true;
 }
