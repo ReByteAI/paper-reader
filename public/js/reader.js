@@ -343,6 +343,7 @@ async function boot() {
     const i = pageNumber - 1;
     repaint(i);
     detectFigures(i);
+    translatePage(i); // picks up a page whose translation has not finished (no-op otherwise)
   });
   eventBus.on("textlayerrendered", ({ pageNumber }) => {
     const i = pageNumber - 1;

@@ -126,20 +126,33 @@ function parse(text, n) {
   return out.map((t) => t.trim());
 }
 
-export async function translateBlocks(i, { regenerate = false } = {}) {
+// A failed, empty or stalled request (no data for 45 s) is retried up to three times; before,
+// such a page stayed in the original until the reader reloaded.
+export async function translateBlocks(i, { regenerate = false, attempt = 0 } = {}) {
   const info = pageInfo(i);
   if (!inlineOn() || info.inlPending || (info.inl && !regenerate)) return;
   const blocks = buildBlocks(i);
   if (!blocks?.length) return;
   info.inlPending = true;
+  const lang = app.settings.lang, ctl = new AbortController();
+  let timer;
+  const idle = () => { clearTimeout(timer); timer = setTimeout(() => ctl.abort(), 45_000); };
+  let ok = false;
   try {
-    await stream("translate-blocks", { lang: app.settings.lang, model: app.settings.trModel, blocks: blocks.map((b) => b.text), regenerate }, (t) => {
+    idle();
+    const full = await stream("translate-blocks", { lang, model: app.settings.trModel, blocks: blocks.map((b) => b.text), regenerate: regenerate || attempt > 0 }, (t) => {
+      idle();
+      if (lang !== app.settings.lang) return;
       info.inlText = parse(t, blocks.length);
       repaint(i, "inl");
-    });
-    info.inl = true;
+    }, { signal: ctl.signal });
+    ok = !/\n> ⚠️/.test(full) && parse(full, blocks.length).filter(Boolean).length > 0;
   } catch (e) { console.warn("inline translation", i, e); }
+  clearTimeout(timer);
   info.inlPending = false;
+  if (lang !== app.settings.lang) return translateBlocks(i); // language changed meanwhile
+  if (ok) info.inl = true;
+  else if (attempt < 3) setTimeout(() => translateBlocks(i, { attempt: attempt + 1 }), 2000 * (attempt + 1));
   repaint(i, "inl");
 }
 
