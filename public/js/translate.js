@@ -3,6 +3,9 @@
 import { app, pageInfo, addPainter, repaint } from "./app.js";
 import { buildSentences, setHover, hover, onHover } from "./sentences.js";
 import { md, stream, esc } from "./util.js";
+import { inlineOn, translateBlocks, resetInline } from "./inline.js";
+
+const sideOn = () => app.settings.translate && app.settings.trLayout === "side";
 
 const MARK = /<\|#(\d+)\|>/g;
 
@@ -26,9 +29,11 @@ function renderTranslation(text) {
 }
 
 // regenerate: retranslate a page the reader marked as wrong (server skips the cache, main model).
+// Inline layout: see inline.js.
 export async function translatePage(i, { regenerate = false } = {}) {
+  if (inlineOn()) return translateBlocks(i, { regenerate });
   const info = pageInfo(i);
-  if (!app.settings.translate || info.trPending || (info.translation && !regenerate)) return;
+  if (!sideOn() || info.trPending || (info.translation && !regenerate)) return;
   const ss = buildSentences(i);
   if (!ss) return;
   info.trPending = true;
@@ -54,7 +59,7 @@ function paintColumn(i) {
 }
 
 addPainter("tr", (i, el) => {
-  if (!app.settings.translate) { el.innerHTML = ""; return; }
+  if (!sideOn()) { el.innerHTML = ""; return; }
   el.innerHTML = `<div class="tr-col"><button class="icon-btn tr-redo" title="Translation looks wrong? Regenerate this page" aria-label="Regenerate translation">${REDO_ICON}</button><div class="tr-body"></div></div>`;
   el.querySelector(".tr-redo").onclick = () => translatePage(i, { regenerate: true });
   const body = el.querySelector(".tr-body");
@@ -81,8 +86,14 @@ function markActive() {
 }
 onHover(markActive);
 
-export function setTranslate(on) {
-  app.settings.translate = on;
-  document.documentElement.classList.toggle("tr-on", on);
-  for (let i = 0; i < (app.pdf?.numPages || 0); i++) repaint(i, "tr");
+export function setTranslate(on, layout = app.settings.trLayout) {
+  Object.assign(app.settings, { translate: on, trLayout: layout });
+  document.documentElement.classList.toggle("tr-on", sideOn());
+  document.documentElement.classList.toggle("inl-on", inlineOn());
+  for (let i = 0; i < (app.pdf?.numPages || 0); i++) { repaint(i, "tr"); repaint(i, "inl"); }
+}
+
+// Language or model changed: translate again.
+export function resetTranslations() {
+  for (let i = 0; i < app.pages.length; i++) if (app.pages[i]) { Object.assign(app.pages[i], { translation: false, trText: "" }); resetInline(i); }
 }

@@ -5,7 +5,7 @@ import { me } from "./auth.js";
 export const app = {
   key: "", meta: {}, pdf: null, viewer: null, eventBus: null, linkService: null,
   state: { highlights: [], explanations: [], citations: [], notes: "", chat: [], chats: null, summary: "" },
-  settings: { lang: "zh", trModel: "lite", sentenceFocus: true, figures: true, autoHighlight: false, translate: false },
+  settings: { lang: "zh", trModel: "lite", sentenceFocus: true, figures: true, autoHighlight: false, translate: false, trLayout: "inline" },
   pages: [], // per page index: { sentences, figures, autohl, translation }
 };
 

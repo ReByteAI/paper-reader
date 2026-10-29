@@ -7,7 +7,7 @@ import { initSelection } from "./selection.js";
 import { initCitations } from "./citations.js";
 import { detectFigures, figureAt, setFigureHover } from "./figures.js";
 import { initLeftRail, initRightPanel, initLayout, toggleOutline, ensureFullText } from "./panels.js";
-import { translatePage, setTranslate } from "./translate.js";
+import { translatePage, setTranslate, resetTranslations } from "./translate.js";
 import { requireSignIn, authHeaders, me, showPaywall } from "./auth.js";
 import { initExport, editPersona } from "./extras.js";
 
@@ -51,7 +51,7 @@ function buildTopbar() {
     <div class="tb-group tb-tools">
       <button class="tool-btn" id="btn-ah" title="Mark key sentences: novelty / method / result">${icon("highlighter", 16)}<span>Auto Highlight</span></button>
       <button class="tool-btn" id="btn-fig" title="Hover figures, tables and equations to explain them">${icon("image", 16)}<span>Image Explanation</span></button>
-      <button class="tool-btn" id="btn-tr" title="Side-by-side translation">${icon("languages", 16)}<span>Translate</span></button>
+      <span class="split"><button class="tool-btn" id="btn-tr" title="Translate the paper">${icon("languages", 16)}<span>Translate</span></button><button class="tool-btn caret" id="btn-trmode" title="Translation layout" aria-label="Translation layout">▾</button></span>
       <button class="icon-btn" id="btn-settings" title="Settings">${icon("settings")}</button>
       <button class="icon-btn" id="btn-export" title="Download & export">${icon("download")}</button>
     </div>
@@ -59,6 +59,10 @@ function buildTopbar() {
       <button class="menu-item" data-export="pdf">${icon("download", 16)} Download PDF</button>
       <button class="menu-item" data-export="md">${icon("note", 16)} Export highlights & notes (Markdown)</button>
       <button class="menu-item" data-export="print">${icon("printer", 16)} Print</button>
+    </div>
+    <div class="dropdown menu" id="dd-tr" popover="auto">
+      <button class="menu-item" data-trmode="side"><span class="tick"></span>Side by side<small>Original page with the translation next to it</small></button>
+      <button class="menu-item" data-trmode="inline"><span class="tick"></span>In place<small>Translation over the original paragraphs · hold ⌥/Alt to see the original</small></button>
     </div>
     <div class="dropdown" id="dd-info" popover="auto"></div>
     <div class="dropdown" id="dd-find" popover="auto">
@@ -146,20 +150,28 @@ function wireTopbar() {
     $("#btn-ah").classList.toggle("on", app.settings.autoHighlight);
     $("#btn-fig").classList.toggle("on", app.settings.figures);
     $("#btn-tr").classList.toggle("on", app.settings.translate);
+    for (const b of document.querySelectorAll("[data-trmode]")) b.classList.toggle("on", b.dataset.trmode === app.settings.trLayout);
     document.documentElement.classList.toggle("ah-on", app.settings.autoHighlight);
   };
   // AI tools need the Pro plan; for free users the buttons open the pricing table instead.
   const pro = (fn) => () => (me.ai ? fn() : showPaywall());
   $("#btn-ah").onclick = pro(() => { app.settings.autoHighlight = !app.settings.autoHighlight; saveSettings(); sync(); forVisible((i) => { ensureAutoHighlight(i); repaint(i, "autohl"); }); });
   $("#btn-fig").onclick = pro(() => { app.settings.figures = !app.settings.figures; saveSettings(); sync(); forVisible((i) => { detectFigures(i); repaint(i, "fig"); }); });
-  $("#btn-tr").onclick = pro(() => {
-    setTranslate(!app.settings.translate); saveSettings(); sync();
-    v.currentScaleValue = app.settings.translate ? fitTwoUp() : "auto";
+  // Side by side needs room for two pages; inline keeps the zoom.
+  const applyTranslate = (on, layout) => {
+    const wasSide = app.settings.translate && app.settings.trLayout === "side";
+    setTranslate(on, layout); saveSettings(); sync();
+    const side = on && layout === "side";
+    if (side !== wasSide) v.currentScaleValue = side ? fitTwoUp() : "auto";
     forVisible(translatePage);
-  });
+  };
+  $("#btn-tr").onclick = pro(() => applyTranslate(!app.settings.translate, app.settings.trLayout));
+  // Picking a layout also turns translation on.
+  $("#btn-trmode").onclick = () => anchorDropdown($("#dd-tr"), $("#btn-trmode"));
+  for (const b of document.querySelectorAll("[data-trmode]")) b.onclick = pro(() => { $("#dd-tr").hidePopover(); applyTranslate(true, b.dataset.trmode); });
   const lang = $("#set-lang"), trModel = $("#set-trmodel"), focus = $("#set-focus");
   lang.value = app.settings.lang; trModel.value = app.settings.trModel; focus.checked = app.settings.sentenceFocus;
-  const retranslate = () => { saveSettings(); for (const p of app.pages) if (p) { p.translation = false; p.trText = ""; } forVisible(translatePage); };
+  const retranslate = () => { saveSettings(); resetTranslations(); forVisible(translatePage); };
   lang.onchange = () => { app.settings.lang = lang.value; retranslate(); };
   trModel.onchange = () => { app.settings.trModel = trModel.value; retranslate(); };
   focus.onchange = () => { app.settings.sentenceFocus = focus.checked; saveSettings(); setHover(-1, [], ""); };
@@ -259,7 +271,7 @@ function initHover() {
       const p = clientToPage(i, ev.clientX, ev.clientY);
       const fk = figureAt(i, p);
       setFigureHover(i, fk);
-      if (!(app.settings.sentenceFocus || app.settings.translate)) return;
+      if (!(app.settings.sentenceFocus || (app.settings.translate && app.settings.trLayout === "side"))) return;
       const s = fk >= 0 ? -1 : sentenceAt(i, p);
       if (s >= 0) setHover(i, [s], "pdf");
       else if (hover.from === "pdf") setHover(-1, [], "pdf");
@@ -323,7 +335,7 @@ async function boot() {
   eventBus.on("pagesinit", () => {
     setTimeout(() => (viewReady = true), 1000);
     if (restoreView()) return;
-    viewer.currentScaleValue = app.settings.translate ? fitTwoUp() : "auto";
+    viewer.currentScaleValue = app.settings.translate && app.settings.trLayout === "side" ? fitTwoUp() : "auto";
     if (app.state.lastPage > 1) viewer.currentPageNumber = app.state.lastPage;
   });
   // Rebuild overlay layers whenever PDF.js (re)renders a page.
@@ -344,7 +356,7 @@ async function boot() {
   viewer.setDocument(pdf);
   linkService.setDocument(pdf, null);
   $("#page-count").textContent = pdf.numPages;
-  if (app.settings.translate) document.documentElement.classList.add("tr-on");
+  if (app.settings.translate) document.documentElement.classList.add(app.settings.trLayout === "side" ? "tr-on" : "inl-on");
 
   wireTopbar();
   initSelection();

@@ -33,6 +33,13 @@ body { overflow: hidden; }
 #dd-settings .row:has(input[type="checkbox"]) { justify-content: flex-start; gap: 10px; }
 #dd-settings select { min-width: 168px; }
 .dropdown.menu { width: auto; min-width: 260px; padding: 6px; }
+.split { display: inline-flex; }
+.split #btn-tr { border-radius: 8px 0 0 8px; padding-right: 6px; }
+.split .caret { border-radius: 0 8px 8px 0; padding: 0 7px; font-size: 11px; color: var(--muted); }
+#dd-tr .menu-item { display: grid; grid-template-columns: 18px 1fr; height: auto; padding: 8px 10px; row-gap: 2px; }
+#dd-tr .menu-item small { grid-column: 2; color: var(--muted); font-size: 12px; }
+#dd-tr .tick::before { content: ""; }
+#dd-tr .menu-item.on .tick::before { content: "✓"; color: var(--accent); }
 .menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; text-align: left; cursor: pointer; }
 .menu-item:hover { background: var(--panel-2); }
 .menu-item .icon { color: var(--muted); }
@@ -109,6 +116,21 @@ html.rp-resizing #main, html.rp-resizing #rightpanel { transition: none; }
 .fig-tools kbd { background: rgba(255,255,255,.2); color: #fff; border: 0; }
 
 /* ---------- translation column ---------- */
+/* Inline translation (js/inline.js): paper-white boxes over the original paragraphs, under the text layer. */
+.inl-layer { position: absolute; inset: 0; pointer-events: none; }
+.inl-block { position: absolute; box-sizing: content-box; margin: -1px -2px; padding: 1px 2px; background: #fff; color: #111;
+  overflow: hidden; line-height: 1.22; font-family: "Noto Serif", "Source Han Serif SC", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+  unicode-bidi: plaintext; text-align: start; }
+.inl-block.multi { text-align: justify; }
+.inl-block a { color: inherit; text-decoration: none; }
+.inl-block > div { overflow-wrap: anywhere; }
+.inl-block .katex { font-size: 1em; }
+html.inl-peek .inl-layer { visibility: hidden; }
+/* Link borders and auto highlights mark words of the original; over the translation they point at the wrong place. */
+html.inl-on:not(.inl-peek) .annotationLayer .linkAnnotation { border-color: transparent !important; }
+html.inl-on:not(.inl-peek) .ml-autohl { display: none; }
+:root[data-theme="dark"] .inl-layer { filter: invert(.88) hue-rotate(180deg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .inl-layer { filter: invert(.88) hue-rotate(180deg); } }
 html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
 .tr-col { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; overflow: auto; background: var(--panel); border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.12); padding: 6% 7%; font-size: calc(var(--scale-factor, 1) * 10.5px); line-height: 1.7; color: var(--text); }
 .tr-col p { margin: 0 0 .8em; }

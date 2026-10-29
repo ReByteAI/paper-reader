@@ -35,6 +35,7 @@ async function detect(i) {
   }
   info.figPending = false;
   repaint(i, "fig");
+  repaint(i, "inl"); // inline translation leaves figures and tables uncovered
 }
 
 // Render page i independently of the viewer (works for pages that are not on screen).
