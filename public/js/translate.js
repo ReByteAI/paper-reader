@@ -4,6 +4,7 @@ import { app, pageInfo, addPainter, repaint } from "./app.js";
 import { buildSentences, setHover, hover, onHover } from "./sentences.js";
 import { md, stream, esc } from "./util.js";
 import { inlineOn, translateBlocks, resetInline } from "./inline.js";
+import { useTranslationFont } from "./fonts.js";
 
 const sideOn = () => app.settings.translate && app.settings.trLayout === "side";
 
@@ -86,8 +87,15 @@ function markActive() {
 }
 onHover(markActive);
 
+// Inline boxes are sized with the font, so they are fitted again once it has loaded.
+function loadFont() {
+  if (app.settings.translate) useTranslationFont(app.settings.lang).then(() => { for (let i = 0; i < app.pages.length; i++) repaint(i, "inl"); });
+}
+loadFont();
+
 export function setTranslate(on, layout = app.settings.trLayout) {
   Object.assign(app.settings, { translate: on, trLayout: layout });
+  loadFont();
   document.documentElement.classList.toggle("tr-on", sideOn());
   document.documentElement.classList.toggle("inl-on", inlineOn());
   for (let i = 0; i < (app.pdf?.numPages || 0); i++) { repaint(i, "tr"); repaint(i, "inl"); }
@@ -95,5 +103,6 @@ export function setTranslate(on, layout = app.settings.trLayout) {
 
 // Language or model changed: translate again.
 export function resetTranslations() {
+  loadFont();
   for (let i = 0; i < app.pages.length; i++) if (app.pages[i]) { Object.assign(app.pages[i], { translation: false, trText: "" }); resetInline(i); }
 }
