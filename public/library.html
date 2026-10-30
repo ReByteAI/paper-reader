@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <script>try { var t = localStorage.getItem("pr-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Library · XYZNOT</title>
   <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
@@ -42,13 +43,13 @@
     .hint { color: var(--faint); font-size: 12.5px; margin-top: 10px; }
     .hint code { background: var(--panel); padding: 1px 5px; border-radius: 4px; }
     .head { display: flex; align-items: center; gap: 12px; }
-    #ws { margin-left: auto; }
+    .head h1 { margin-right: auto; }
     #ws:empty { display: none; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="head"><h1><a href="/"><span class="logo-dot"></span>Library</a></h1><div id="ws"></div><div id="user"></div></div>
+    <div class="head"><h1><a href="/"><span class="logo-dot"></span>Library</a></h1><div id="ws"></div><button class="icon-btn" id="theme"></button><div id="user"></div></div>
     <div id="app">
     <div class="search">
       <form id="f" role="search">
@@ -71,7 +72,8 @@
     import { requireSignIn, mountUserButton, mountWorkspaceSwitcher, showPaywall, me } from "/js/auth.js";
     import { attachSearch } from "/js/search.js";
     import { confirmDialog, promptDialog } from "/js/ui.js";
-    try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+    import { mountThemeButton } from "/js/theme.js";
+    mountThemeButton($("#theme"));
     await requireSignIn().catch((e) => ($("#err").textContent = e.message));
     mountWorkspaceSwitcher($("#ws"));
     if (me.team) $("#library").textContent = `${me.teamName || "Team"} · shared with your team`;

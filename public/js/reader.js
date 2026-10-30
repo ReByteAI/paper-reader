@@ -16,7 +16,6 @@ globalThis.pdfjsLib = pdfjsLib;
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/build/pdf.worker.mjs";
 const { EventBus, PDFViewer, PDFLinkService, PDFFindController, LinkTarget } = await import("/vendor/pdfjs/web/pdf_viewer.mjs");
 
-try { const t = localStorage.getItem("pr-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
 
 app.key = decodeURIComponent(location.pathname.split("/paper/")[1] || "");
 
@@ -156,8 +155,8 @@ function wireTopbar() {
   };
   // AI tools need the Pro plan; for free users the buttons open the pricing table instead.
   const pro = (fn) => () => (me.ai ? fn() : showPaywall());
-  $("#btn-ah").onclick = pro(() => { app.settings.autoHighlight = !app.settings.autoHighlight; saveSettings(); sync(); forVisible((i) => { ensureAutoHighlight(i); repaint(i, "autohl"); }); });
-  $("#btn-fig").onclick = pro(() => { app.settings.figures = !app.settings.figures; saveSettings(); sync(); forVisible((i) => { detectFigures(i); repaint(i, "fig"); }); });
+  $("#btn-ah").onclick = pro(() => { app.settings.autoHighlight = !app.settings.autoHighlight; saveSettings(); sync(); forVisible(ensureAutoHighlight); repaintAll("autohl"); });
+  $("#btn-fig").onclick = pro(() => { app.settings.figures = !app.settings.figures; saveSettings(); sync(); forVisible(detectFigures); repaintAll("fig"); });
   // Side by side needs room for two pages; inline keeps the zoom.
   const applyTranslate = (on, layout) => {
     const wasSide = app.settings.translate && app.settings.trLayout === "side";
@@ -355,6 +354,10 @@ async function boot() {
     translatePage(i);
   });
   eventBus.on("annotationlayerrendered", ({ pageNumber }) => repaint(pageNumber - 1));
+  // A page drawn before a tool was turned on (or before the language changed) gets no new
+  // render event, so the tools also start for the pages that come into view. All are no-ops
+  // for a page that is done or in progress.
+  eventBus.on("updateviewarea", debounce(() => forVisible((i) => { translatePage(i); detectFigures(i); ensureAutoHighlight(i); }), 250));
 
   viewer.setDocument(pdf);
   linkService.setDocument(pdf, null);

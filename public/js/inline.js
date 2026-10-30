@@ -230,7 +230,7 @@ addPainter("inl", (i, el) => {
   const info = pageInfo(i), blocks = info.blocks || [], texts = info.inlText || [];
   const H = div.clientHeight;
   host.innerHTML = blocks.map((b, k) => texts[k] && !inFigure(b.rect, info.figures) && !(info.inl && unchanged(b.text, texts[k]))
-    ? `<div class="inl-block${b.lines > 1 ? " multi" : ""}" data-k="${k}" style="${rectStyle(b.rect)};font-size:${(b.lh * H * 0.82).toFixed(1)}px"><div>${md(literalStart(texts[k])).replace(/^<p>|<\/p>\s*$/g, "")}</div></div>`
+    ? `<div class="inl-block${b.lines > 1 ? " multi" : ""}" data-k="${k}" style="${rectStyle(b.rect)};font-size:${(b.lh * H * 0.82).toFixed(1)}px"><div dir="auto">${md(literalStart(texts[k])).replace(/^<p>|<\/p>\s*$/g, "")}</div></div>`
     : "").join("");
   if (hovered.i === i) mark(i, hovered.k, true);
   // Largest text size (up to a little above the original) that fits the box; then the line

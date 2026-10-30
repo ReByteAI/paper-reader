@@ -3,6 +3,7 @@ import { mountUserButton, me } from "./auth.js";
 import { app, saveState, onStateChange, scrollToPagePoint, placeAllSoon } from "./app.js";
 import { $, $$, h, esc, md, icon, toast } from "./util.js";
 import { renderAI, renderQuiz, renderRelated } from "./ai.js";
+import { mountThemeButton } from "./theme.js";
 
 // In a team, list items show who added them.
 const byline = (who) => (me.team && who?.name ? `<span class="by">${esc(who.name)}</span>` : "");
@@ -50,9 +51,10 @@ export function initLeftRail() {
       <button class="rail-item" data-act="info">${icon("info")}<span class="rail-label">Paper info</span></button>
     </nav>
     <span class="grow"></span>
-    <button class="rail-item" data-act="theme">${icon("moon")}<span class="rail-label">Dark mode</span></button>
+    <button class="rail-item" id="rail-theme"></button>
     <div class="rail-user" id="rail-user"></div>`;
   mountUserButton($("#rail-user"));
+  mountThemeButton($("#rail-theme"), { label: true });
   // Expands over the content (no reflow) on hover or keyboard focus.
   const open = () => rail.classList.add("expanded");
   const close = () => rail.classList.remove("expanded");
@@ -65,14 +67,7 @@ export function initLeftRail() {
     if (act === "upload") uploadPdf();
     if (act === "outline") toggleOutline();
     if (act === "info") $("#btn-info").click();
-    if (act === "theme") toggleTheme();
   });
-}
-
-export function toggleTheme() {
-  const dark = root.dataset.theme !== "dark";
-  root.dataset.theme = dark ? "dark" : "light";
-  try { localStorage.setItem("pr-theme", root.dataset.theme); } catch {}
 }
 
 export function uploadPdf() {

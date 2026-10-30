@@ -133,7 +133,7 @@ html.inl-on:not(.inl-peek) .ml-autohl { display: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .inl-layer { filter: invert(.88) hue-rotate(180deg); } }
 html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
 /* Side by side: a copy of the page to the right, with the translation in place. */
-.tr-page { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tr-page { position: absolute; top: 0; left: calc(100% + 18px); width: 100%; height: 100%; pointer-events: auto; background: var(--panel); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .tr-page > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .tr-page .inl-block.on, .inl-mirror { box-shadow: 0 0 0 2px rgba(120, 140, 255, .45); border-radius: 2px; }
 .inl-mirror { position: absolute; background: rgba(120, 140, 255, .08); pointer-events: none; }
