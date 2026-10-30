@@ -121,7 +121,8 @@ async function buildOutline() {
 
 export function initRightPanel() {
   const rail = $("#rightrail");
-  rail.innerHTML = TABS.map((t) => `<button class="rail-item" data-tab="${t.id}" title="${t.label}">${icon(t.icon)}<span class="rail-tip">${t.label}</span></button>`).join("");
+  rail.innerHTML = TABS.map((t, n) => `<button class="rail-item" data-tab="${t.id}" title="${t.label} (${KEY_LABEL}${n + 1})">${icon(t.icon)}<span class="rail-tip">${t.label} <kbd>${KEY_LABEL}${n + 1}</kbd></span><kbd class="rail-key">${n + 1}</kbd></button>`).join("");
+  initTabKeys(rail);
   rail.addEventListener("click", (e) => {
     const t = e.target.closest("[data-tab]")?.dataset.tab;
     if (t) (activeTab === t ? closePanel() : openPanel(t));
@@ -133,6 +134,28 @@ export function initRightPanel() {
   } catch {}
   initResize();
   onStateChange(() => activeTab && !["ai", "notes", "quiz", "related"].includes(activeTab) && renderTab(activeTab));
+}
+
+// Tab shortcuts: Control+1…8 on a Mac, Alt+1…8 elsewhere. A page cannot take ⌘+digit (Mac) or
+// Ctrl+digit (Windows, Linux): the browser uses them to switch its own tabs. Holding the
+// modifier shows each tab's number.
+const MAC = /Mac|iPhone|iPad/.test(navigator.platform);
+const MOD = MAC ? "Control" : "Alt";
+const KEY_LABEL = MAC ? "⌃" : "Alt+";
+function initTabKeys(rail) {
+  const show = (on) => rail.classList.toggle("show-keys", on);
+  addEventListener("keydown", (e) => {
+    if (e.key === MOD) return show(true);
+    const held = MAC ? e.ctrlKey && !e.metaKey && !e.altKey : e.altKey && !e.ctrlKey && !e.metaKey;
+    // e.code, not e.key: the digit key itself, whatever the keyboard layout or modifier prints.
+    const n = /^Digit[1-9]$/.test(e.code) ? Number(e.code.slice(5)) : 0;
+    if (!held || !n || n > TABS.length) return;
+    e.preventDefault();
+    const t = TABS[n - 1].id;
+    activeTab === t ? closePanel() : openPanel(t);
+  });
+  addEventListener("keyup", (e) => { if (e.key === MOD) show(false); });
+  addEventListener("blur", () => show(false));
 }
 
 export function openPanel(tab) {

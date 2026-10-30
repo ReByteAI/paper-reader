@@ -216,6 +216,11 @@ export async function streamInto(card, task, body) {
   try {
     const text = await stream(task, body, (t) => { if (t) out.innerHTML = md(t); }, { signal: ctrl.signal });
     out.classList.remove("streaming");
+    if (text) {
+      const b = h(`<button class="btn ghost" title="Copy">${icon("copy", 14)} Copy</button>`);
+      b.onclick = () => { navigator.clipboard.writeText(text); toast("Copied"); };
+      card.foot.prepend(b);
+    }
     return text;
   } catch (e) {
     if (e.name !== "AbortError") out.innerHTML = `<p class="error">${esc(e.message)}</p>`;

@@ -3,6 +3,7 @@
 import { app, saveState, pageText } from "./app.js";
 import { $, esc, md, icon, stream, aiJson, toast, uid } from "./util.js";
 import { openPanel } from "./panels.js";
+import { confirmDialog } from "./ui.js";
 
 let quote = null; // { text, page } attached to the next question
 let chatAbort = null;
@@ -57,7 +58,7 @@ export function renderAI(body) {
         <details class="ai-sec" open data-sec="kw">${secHead("kw", "Keywords")}<div class="kw-chips"></div><div class="kw-def" hidden></div></details>
         <details class="ai-sec" open data-sec="tldr">${secHead("tldr", "Three-line summary")}<div class="md tldr"></div></details>
         <details class="ai-sec" data-sec="guide">${secHead("guide", "Reading guide")}<div class="md summary"></div></details>
-        <div class="disc-bar"><select class="select" id="disc-select" aria-label="Discussion"></select><button class="btn small" id="disc-new">${icon("plus", 14)} New</button></div>
+        <div class="disc-bar"><select class="select" id="disc-select" aria-label="Discussion"></select><button class="icon-btn" id="disc-del" title="Delete discussion">${icon("trash", 15)}</button><button class="btn small" id="disc-new">${icon("plus", 14)} New</button></div>
         <div class="chat"></div>
       </div>
       <div class="composer">
@@ -73,6 +74,21 @@ export function renderAI(body) {
     body.querySelector("#disc-new").onclick = () => { chatAbort?.abort(); activeChat = null; const c = { id: uid(), title: "", refs: [], messages: [] }; chats().unshift(c); activeChat = c.id; renderAI(body); ta.focus(); };
     body.querySelector("#disc-select").onchange = (e) => { chatAbort?.abort(); activeChat = e.target.value; renderAI(body); };
     body.querySelector(".ai-scroll").addEventListener("click", (e) => onSectionClick(e, body));
+    body.querySelector(".chat").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-copymsg]");
+      const text = b && currentChat(false)?.messages[b.dataset.copymsg]?.text;
+      if (text) { navigator.clipboard.writeText(text); toast("Copied"); }
+    });
+    body.querySelector("#disc-del").onclick = async () => {
+      const c = currentChat(false);
+      if (!c?.messages.length) return;
+      if (!(await confirmDialog({ title: "Delete this discussion?", description: c.title || "", confirmLabel: "Delete", destructive: true }))) return;
+      chatAbort?.abort();
+      app.state.chats = chats().filter((x) => x.id !== c.id);
+      activeChat = null;
+      saveState();
+      renderAI(body);
+    };
     body.querySelector(".kw-chips").addEventListener("click", (e) => {
       const chip = e.target.closest("[data-i]");
       if (!chip) return;
@@ -142,6 +158,8 @@ async function runGuide(body, regenerate = false) {
   box.classList.remove("streaming");
 }
 
+const copyMsg = (k) => `<div class="msg-acts"><button class="icon-btn sm" data-copymsg="${k}" title="Copy">${icon("copy", 14)}</button></div>`;
+
 function renderChat(body) {
   const c = currentChat(false);
   const sel = body.querySelector("#disc-select");
@@ -150,14 +168,8 @@ function renderChat(body) {
     : `<option>New discussion</option>`;
   const msgs = c?.messages || [];
   const chat = body.querySelector(".chat");
-  chat.innerHTML = msgs.map((m, k) => `<div class="msg ${m.role}">${m.quote ? `<blockquote class="quote small">${esc(m.quote.slice(0, 200))}</blockquote>` : ""}<div class="${m.role === "user" ? "" : "md"}" data-k="${k}">${m.role === "user" ? esc(m.text) : md(m.text)}</div></div>`).join("")
-    + (msgs.length ? `<button class="btn ghost small del-chat">${icon("trash", 14)} Delete discussion</button>` : "");
-  chat.querySelector(".del-chat")?.addEventListener("click", () => {
-    app.state.chats = chats().filter((x) => x.id !== c.id);
-    activeChat = null;
-    saveState();
-    renderAI(body);
-  });
+  chat.innerHTML = msgs.map((m, k) => `<div class="msg ${m.role}">${m.quote ? `<blockquote class="quote small">${esc(m.quote.slice(0, 200))}</blockquote>` : ""}<div class="${m.role === "user" ? "" : "md"}" data-k="${k}">${m.role === "user" ? esc(m.text) : md(m.text)}</div>${m.role === "model" && m.text ? copyMsg(k) : ""}</div>`).join("");
+  body.querySelector("#disc-del").hidden = !msgs.length;
 
   const chip = body.querySelector(".quote-chip");
   chip.hidden = !quote;
@@ -215,6 +227,7 @@ async function send(body) {
     if (e.name !== "AbortError") { msg.text = `⚠️ ${e.message}`; out.innerHTML = md(msg.text); }
   }
   out.parentElement.classList.remove("streaming");
+  if (msg.text && out.isConnected) out.insertAdjacentHTML("afterend", copyMsg(c.messages.length - 1));
   saveState();
 }
 

@@ -55,6 +55,18 @@ function buildTopbar() {
       <button class="icon-btn" id="btn-settings" title="Settings">${icon("settings")}</button>
       <button class="icon-btn" id="btn-export" title="Download & export">${icon("download")}</button>
     </div>
+    <button class="icon-btn" id="btn-more" title="Tools">${icon("more")}</button>
+    <div class="dropdown menu" id="dd-more" popover="auto">
+      <button class="menu-item" data-proxy="btn-ah"><span class="tick"></span>${icon("highlighter", 16)} Auto Highlight</button>
+      <button class="menu-item" data-proxy="btn-fig"><span class="tick"></span>${icon("image", 16)} Image Explanation</button>
+      <button class="menu-item" data-proxy="btn-tr"><span class="tick"></span>${icon("languages", 16)} Translate</button>
+      <button class="menu-item" data-proxy="btn-trmode"><span class="tick"></span>${icon("panelRight", 16)} Translation layout…</button>
+      <div class="rail-sep"></div>
+      <button class="menu-item" data-proxy="zoom-out"><span class="tick"></span>${icon("minus", 16)} Zoom out</button>
+      <button class="menu-item" data-proxy="zoom-in"><span class="tick"></span>${icon("plus", 16)} Zoom in</button>
+      <button class="menu-item" data-proxy="btn-settings"><span class="tick"></span>${icon("settings", 16)} Settings</button>
+      <button class="menu-item" data-proxy="btn-export"><span class="tick"></span>${icon("download", 16)} Download & export</button>
+    </div>
     <div class="dropdown menu" id="dd-export" popover="auto">
       <button class="menu-item" data-export="pdf">${icon("download", 16)} Download PDF</button>
       <button class="menu-item" data-export="md">${icon("note", 16)} Export highlights & notes (Markdown)</button>
@@ -83,8 +95,10 @@ function buildTopbar() {
 }
 
 function anchorDropdown(dd, btn) {
+  // On phones the tool buttons sit in the ⋯ menu; anchor to it instead.
+  if (!btn.offsetParent) btn = $("#btn-more");
   const r = btn.getBoundingClientRect();
-  dd.style.left = Math.min(r.left, innerWidth - 380) + "px";
+  dd.style.left = Math.max(8, Math.min(r.left, innerWidth - 380)) + "px";
   dd.style.top = r.bottom + 6 + "px";
   dd.togglePopover();
 }
@@ -96,6 +110,18 @@ function wireTopbar() {
   $("#btn-find").onclick = () => { anchorDropdown($("#dd-find"), $("#btn-find")); $("#find-input").focus(); };
   $("#btn-settings").onclick = () => anchorDropdown($("#dd-settings"), $("#btn-settings"));
   $("#btn-export").onclick = () => anchorDropdown($("#dd-export"), $("#btn-export"));
+  // Phone menu: each item clicks the hidden toolbar button it stands for.
+  $("#btn-more").onclick = () => {
+    for (const m of document.querySelectorAll("[data-proxy]")) m.classList.toggle("on", $("#" + m.dataset.proxy).classList.contains("on"));
+    const dd = $("#dd-more");
+    anchorDropdown(dd, $("#btn-more"));
+    dd.style.left = innerWidth - dd.offsetWidth - 8 + "px";
+  };
+  for (const m of document.querySelectorAll("[data-proxy]")) m.onclick = () => {
+    const zoom = m.dataset.proxy.startsWith("zoom");
+    if (!zoom) $("#dd-more").hidePopover();
+    $("#" + m.dataset.proxy).click();
+  };
   $("#set-persona").onclick = () => { $("#dd-settings").hidePopover(); editPersona(); };
   initExport();
 

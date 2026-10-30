@@ -23,6 +23,23 @@ body { overflow: hidden; }
 .tool-btn:hover { background: var(--panel-2); }
 .tool-btn.on { background: var(--accent-soft); color: var(--accent); }
 @media (max-width: 1250px) { .tool-btn span { display: none; } .tb-title { display: none; } }
+#btn-more, #dd-more .tick { display: none; }
+#dd-more .menu-item.on { color: var(--accent); }
+#dd-more .menu-item.on .icon { color: var(--accent); }
+/* Phones: tools fold into the ⋯ menu; rails get narrower; panels cover the page instead of pushing it. */
+@media (max-width: 720px) {
+  :root { --rail-w: 46px; }
+  html.outline-open { --outline-w: 0px; }
+  html.rp-open { --rp-w: 0px; }
+  #topbar { gap: 4px; padding: 0 6px; }
+  #btn-outline, #btn-info, #zoom, #zoom-in, #zoom-out, .tb-tools { display: none; }
+  #btn-more { display: inline-flex; margin-left: auto; }
+  html #leftrail { padding: 10px 3px; }
+  html #rightrail .rail-item { width: 38px; height: 38px; }
+  html #rightpanel { width: calc(100vw - 2 * var(--rail-w)); }
+  #rp-resize { display: none; }
+  .dropdown { max-width: calc(100vw - 16px); }
+}
 
 .dropdown { position: fixed; inset: auto; margin: 0; width: 360px; max-height: 70vh; overflow: auto; background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 12px; }
 #dd-find { width: 320px; padding: 8px; }
@@ -205,6 +222,9 @@ html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
 #rightrail .rail-item { width: 40px; height: 40px; justify-content: center; padding: 0; }
 .rail-tip { position: absolute; right: calc(100% + 8px); top: 50%; translate: 0 -50%; background: #222; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 120ms; }
 #rightrail .rail-item:hover .rail-tip { opacity: 1; }
+.rail-tip kbd { margin-left: 6px; font: inherit; opacity: .6; }
+.rail-key { position: absolute; top: 1px; right: 1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 4px; background: var(--text); color: var(--panel); font: 600 10px/15px var(--font); text-align: center; pointer-events: none; opacity: 0; scale: .7; transition: opacity 100ms, scale 100ms; }
+#rightrail.show-keys .rail-key { opacity: 1; scale: 1; }
 #rightpanel { position: fixed; top: var(--top-h); bottom: 0; right: var(--rail-w); width: var(--right-panel-open-w, 400px); z-index: 5040; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--border); translate: calc(100% + var(--rail-w)) 0; visibility: hidden; transition: translate 180ms var(--ease), visibility 180ms; }
 html.rp-open #rightpanel { translate: 0 0; visibility: visible; }
 #rp-resize { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 2; }
@@ -243,7 +263,9 @@ details.exp .md { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(
 .msg.user { align-self: flex-end; max-width: 88%; }
 .msg.user > div { background: var(--accent-soft); padding: 8px 12px; border-radius: 12px 12px 2px 12px; white-space: pre-wrap; }
 .msg.model { font-size: 13.5px; }
-.clear-chat { align-self: center; }
+.msg-acts { display: flex; margin: 2px 0 0 -6px; opacity: .55; transition: opacity .15s; }
+.msg.model:hover .msg-acts, .msg-acts:focus-within { opacity: 1; }
+@media (hover: none) { .msg-acts { opacity: .8; } }
 .composer { border-top: 1px solid var(--border); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
 .quote-chip { display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--muted); background: var(--panel-2); border-radius: 8px; padding: 6px 6px 6px 10px; }
 .quote-chip span { flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -276,7 +298,6 @@ details.exp .md { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(
 .tldr li { margin: 4px 0; }
 .disc-bar { display: flex; gap: 6px; align-items: center; margin: 4px 0 10px; }
 .disc-bar .select { flex: 1; min-width: 0; }
-.del-chat { align-self: flex-start; margin-top: 4px; }
 .refs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .ref-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 4px 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
 .ref-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
