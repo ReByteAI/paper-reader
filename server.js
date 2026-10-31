@@ -57,8 +57,12 @@ const diskUsers = {
   async put(uid, key, entry) {
     const file = userFile(uid, key);
     await fsp.mkdir(path.dirname(file), { recursive: true });
-    const { customTitle } = (await this.get(uid, key)) || {};
-    await fsp.writeFile(file, JSON.stringify({ key, ...entry, customTitle }));
+    const { customTitle, favorite } = (await this.get(uid, key)) || {};
+    await fsp.writeFile(file, JSON.stringify({ key, ...entry, customTitle, favorite }));
+  },
+  async favorite(uid, key, on) {
+    const entry = await this.get(uid, key);
+    if (entry) await fsp.writeFile(userFile(uid, key), JSON.stringify({ ...entry, favorite: on || undefined }));
   },
   async rename(uid, key, title) {
     const entry = await this.get(uid, key);
@@ -76,7 +80,7 @@ const diskUsers = {
     const out = [];
     for (const f of await fsp.readdir(dir).catch(() => [])) {
       const e = JSON.parse(await fsp.readFile(path.join(dir, f), "utf8"));
-      out.push({ ...e, title: e.customTitle || e.title, originalTitle: e.title });
+      out.push({ ...e, title: e.customTitle || e.title, originalTitle: e.title, favorite: !!e.favorite });
     }
     return out;
   },
