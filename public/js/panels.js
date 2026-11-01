@@ -8,15 +8,16 @@ import { mountThemeButton } from "./theme.js";
 // In a team, list items show who added them.
 const byline = (who) => (me.team && who?.name ? `<span class="by">${esc(who.name)}</span>` : "");
 
+// key: the letter that opens the tab (first letter; Citations takes I because Comments has C).
 const TABS = [
-  { id: "ai", label: "With AI", icon: "bot" },
-  { id: "highlights", label: "Highlights", icon: "highlighter" },
-  { id: "explanations", label: "Explanations", icon: "lightbulb" },
-  { id: "comments", label: "Comments", icon: "message" },
-  { id: "notes", label: "Notes", icon: "note" },
-  { id: "citations", label: "Citations", icon: "quote" },
-  { id: "quiz", label: "Quiz", icon: "quiz" },
-  { id: "related", label: "Related papers", icon: "compass" },
+  { id: "ai", label: "With AI", icon: "bot", key: "A" },
+  { id: "highlights", label: "Highlights", icon: "highlighter", key: "H" },
+  { id: "explanations", label: "Explanations", icon: "lightbulb", key: "E" },
+  { id: "comments", label: "Comments", icon: "message", key: "C" },
+  { id: "notes", label: "Notes", icon: "note", key: "N" },
+  { id: "citations", label: "Citations", icon: "quote", key: "I" },
+  { id: "quiz", label: "Quiz", icon: "quiz", key: "Q" },
+  { id: "related", label: "Related papers", icon: "compass", key: "R" },
 ];
 const root = document.documentElement;
 let activeTab = null;
@@ -121,11 +122,13 @@ async function buildOutline() {
 
 export function initRightPanel() {
   const rail = $("#rightrail");
-  rail.innerHTML = TABS.map((t, n) => `<button class="rail-item" data-tab="${t.id}" title="${t.label} (${KEY_LABEL}${n + 1})">${icon(t.icon)}<span class="rail-tip">${t.label} <kbd>${KEY_LABEL}${n + 1}</kbd></span><kbd class="rail-key">${n + 1}</kbd></button>`).join("");
+  rail.innerHTML = TABS.map((t) => `<button class="rail-item" data-tab="${t.id}" title="${t.label} (${t.key})">${icon(t.icon)}<span class="rail-tip">${t.label} <kbd>${t.key}</kbd></span><kbd class="rail-key">${t.key}</kbd></button>`).join("");
   initTabKeys(rail);
+  // A click focuses the panel too, except on touch screens, where that would pop up the keyboard.
+  const finePointer = matchMedia("(hover: hover) and (pointer: fine)");
   rail.addEventListener("click", (e) => {
     const t = e.target.closest("[data-tab]")?.dataset.tab;
-    if (t) (activeTab === t ? closePanel() : openPanel(t));
+    if (t) (activeTab === t ? closePanel() : openPanel(t, { focus: finePointer.matches }));
   });
   $("#rp-close").onclick = closePanel;
   try {
@@ -136,36 +139,50 @@ export function initRightPanel() {
   onStateChange(() => activeTab && !["ai", "notes", "quiz", "related"].includes(activeTab) && renderTab(activeTab));
 }
 
-// Tab shortcuts: Control+1…8 on a Mac, Alt+1…8 elsewhere. A page cannot take ⌘+digit (Mac) or
-// Ctrl+digit (Windows, Linux): the browser uses them to switch its own tabs. Holding the
-// modifier shows each tab's number.
+// Tab shortcuts: each tab's letter (A opens With AI, and so on) opens it and puts the focus in
+// it; the same letter closes it. Esc in the panel gives the focus back to the paper. Letters do
+// nothing while typing or with text selected (the selection menu has its own letters), and a
+// figure under the cursor keeps E and C (figures.js, which handles the key first).
+// Holding Control (Mac) or Alt shows each tab's letter on the rail.
 const MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = MAC ? "Control" : "Alt";
-const KEY_LABEL = MAC ? "⌃" : "Alt+";
+export const typing = (el) => !!el?.closest?.("input, textarea, select, [contenteditable]");
 function initTabKeys(rail) {
   const show = (on) => rail.classList.toggle("show-keys", on);
   addEventListener("keydown", (e) => {
     if (e.key === MOD) return show(true);
-    const held = MAC ? e.ctrlKey && !e.metaKey && !e.altKey : e.altKey && !e.ctrlKey && !e.metaKey;
-    // e.code, not e.key: the digit key itself, whatever the keyboard layout or modifier prints.
-    const n = /^Digit[1-9]$/.test(e.code) ? Number(e.code.slice(5)) : 0;
-    if (!held || !n || n > TABS.length) return;
+    if (e.key === "Escape" && $("#rightpanel").contains(document.activeElement)) return document.activeElement.blur();
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.repeat || e.isComposing || e.defaultPrevented) return;
+    if (typing(e.target) || !getSelection().isCollapsed) return;
+    // e.code, not e.key: the key itself, whatever the keyboard layout prints.
+    const t = TABS.find((x) => e.code === "Key" + x.key);
+    if (!t) return;
     e.preventDefault();
-    const t = TABS[n - 1].id;
-    activeTab === t ? closePanel() : openPanel(t);
+    activeTab === t.id ? closePanel() : openPanel(t.id, { focus: true });
   });
   addEventListener("keyup", (e) => { if (e.key === MOD) show(false); });
   addEventListener("blur", () => show(false));
 }
 
-export function openPanel(tab) {
+// The tab's text box (With AI, Notes), else the panel itself so the arrow keys scroll it.
+function focusPanel() {
+  const body = $("#rp-body");
+  const box = body.querySelector("#chat-input, .notes textarea:not([hidden])");
+  if (!box) return body.focus({ preventScroll: true });
+  box.focus({ preventScroll: true });
+  box.setSelectionRange?.(box.value.length, box.value.length);
+}
+
+export function openPanel(tab, { focus = false } = {}) {
   activeTab = tab;
   root.classList.add("rp-open");
   $$("#rightrail [data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
   $("#rp-title").textContent = TABS.find((t) => t.id === tab).label;
   renderTab(tab);
+  if (focus) focusPanel();
 }
 export function closePanel() {
+  if ($("#rightpanel").contains(document.activeElement)) document.activeElement.blur();
   activeTab = null;
   root.classList.remove("rp-open");
   $$("#rightrail [data-tab]").forEach((b) => b.classList.remove("on"));

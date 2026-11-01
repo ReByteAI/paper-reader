@@ -226,11 +226,13 @@ html.tr-on .pdfViewer .page { margin-left: 24px; margin-right: auto; }
 .rail-key { position: absolute; top: 1px; right: 1px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 4px; background: var(--text); color: var(--panel); font: 600 10px/15px var(--font); text-align: center; pointer-events: none; opacity: 0; scale: .7; transition: opacity 100ms, scale 100ms; }
 #rightrail.show-keys .rail-key { opacity: 1; scale: 1; }
 #rightpanel { position: fixed; top: var(--top-h); bottom: 0; right: var(--rail-w); width: var(--right-panel-open-w, 400px); z-index: 5040; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--border); translate: calc(100% + var(--rail-w)) 0; visibility: hidden; transition: translate 180ms var(--ease), visibility 180ms; }
-html.rp-open #rightpanel { translate: 0 0; visibility: visible; }
+/* Visible at once when opening, so a shortcut can focus its text box right away. */
+html.rp-open #rightpanel { translate: 0 0; visibility: visible; transition: translate 180ms var(--ease), visibility 0s; }
 #rp-resize { position: absolute; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; z-index: 2; }
 #rp-resize:hover, html.rp-resizing #rp-resize { background: linear-gradient(90deg, transparent 4px, var(--accent) 4px, var(--accent) 6px, transparent 6px); }
 .rp-head { display: flex; align-items: center; height: 48px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--border); font-weight: 600; }
 #rp-body { flex: 1; overflow: auto; padding: 12px; }
+#rp-body:focus { outline: none; }
 #rp-body[data-tab="ai"] { padding: 0; overflow: hidden; display: flex; }
 
 .empty { display: grid; justify-items: center; gap: 8px; color: var(--faint); text-align: center; padding: 60px 20px; }

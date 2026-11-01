@@ -1,12 +1,12 @@
 // Reader entry: boots PDF.js, the top bar, and wires every interaction module together.
 import * as pdfjsLib from "/vendor/pdfjs/build/pdf.mjs";
-import { app, pageInfo, repaint, repaintAll, placeAllSoon, pageAtPoint, clientToPage, saveSettings, saveState, markSynced, pullState } from "./app.js";
-import { $, esc, icon, debounce } from "./util.js";
+import { app, LANGS, pageInfo, repaint, repaintAll, placeAllSoon, pageAtPoint, clientToPage, saveSettings, saveState, markSynced, pullState } from "./app.js";
+import { $, esc, icon, debounce, toast } from "./util.js";
 import { prepareSentencesFor, sentenceAt, setHover, hover, ensureAutoHighlight } from "./sentences.js";
 import { initSelection } from "./selection.js";
 import { initCitations } from "./citations.js";
 import { detectFigures, figureAt, setFigureHover } from "./figures.js";
-import { initLeftRail, initRightPanel, initLayout, toggleOutline, ensureFullText } from "./panels.js";
+import { initLeftRail, initRightPanel, initLayout, toggleOutline, ensureFullText, typing } from "./panels.js";
 import { translatePage, setTranslate, resetTranslations } from "./translate.js";
 import { sideOn, blockAt, setBlockHover } from "./inline.js";
 import { requireSignIn, authHeaders, me, showPaywall } from "./auth.js";
@@ -18,15 +18,6 @@ const { EventBus, PDFViewer, PDFLinkService, PDFFindController, LinkTarget } = a
 
 
 app.key = decodeURIComponent(location.pathname.split("/paper/")[1] || "");
-
-// Answer and translation languages (names in their own script). Codes match LANG in lib/prompts.js.
-const LANGS = [
-  ["zh", "简体中文"], ["zh-TW", "繁體中文"], ["en", "English"], ["ja", "日本語"], ["ko", "한국어"],
-  ["ar", "العربية"], ["fa", "فارسی"], ["he", "עברית"], ["hi", "हिन्दी"], ["bn", "বাংলা"],
-  ["th", "ไทย"], ["vi", "Tiếng Việt"], ["id", "Bahasa Indonesia"], ["ms", "Bahasa Melayu"],
-  ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"], ["pt", "Português"], ["it", "Italiano"],
-  ["nl", "Nederlands"], ["pl", "Polski"], ["ru", "Русский"], ["uk", "Українська"], ["tr", "Türkçe"],
-];
 
 // ---------- top bar ----------
 
@@ -51,7 +42,7 @@ function buildTopbar() {
     <div class="tb-group tb-tools">
       <button class="tool-btn" id="btn-ah" title="Mark key sentences: novelty / method / result">${icon("highlighter", 16)}<span>Auto Highlight</span></button>
       <button class="tool-btn" id="btn-fig" title="Hover figures, tables and equations to explain them">${icon("image", 16)}<span>Image Explanation</span></button>
-      <span class="split"><button class="tool-btn" id="btn-tr" title="Translate the paper">${icon("languages", 16)}<span>Translate</span></button><button class="tool-btn caret" id="btn-trmode" title="Translation layout" aria-label="Translation layout">▾</button></span>
+      <span class="split"><button class="tool-btn" id="btn-tr" title="Translate the paper (T)">${icon("languages", 16)}<span>Translate</span></button><button class="tool-btn caret" id="btn-trmode" title="Translation layout (⇧T to switch)" aria-label="Translation layout">▾</button></span>
       <button class="icon-btn" id="btn-settings" title="Settings">${icon("settings")}</button>
       <button class="icon-btn" id="btn-export" title="Download & export">${icon("download")}</button>
     </div>
@@ -195,6 +186,20 @@ function wireTopbar() {
   // Picking a layout also turns translation on.
   $("#btn-trmode").onclick = () => anchorDropdown($("#dd-tr"), $("#btn-trmode"));
   for (const b of document.querySelectorAll("[data-trmode]")) b.onclick = pro(() => { $("#dd-tr").hidePopover(); applyTranslate(true, b.dataset.trmode); });
+  // T turns translation on or off; ⇧T switches between in place and side by side. With text
+  // selected, T stays "translate the selection" (selection menu). e.code keeps it layout-independent.
+  const LAYOUT = { inline: "In place", side: "Side by side" };
+  addEventListener("keydown", (e) => {
+    if (e.code !== "KeyT" || e.metaKey || e.ctrlKey || e.altKey || e.repeat || e.isComposing || e.defaultPrevented) return;
+    if (typing(e.target) || !getSelection().isCollapsed) return;
+    e.preventDefault();
+    pro(() => {
+      const on = e.shiftKey || !app.settings.translate;
+      const layout = e.shiftKey && app.settings.translate ? (app.settings.trLayout === "side" ? "inline" : "side") : app.settings.trLayout;
+      applyTranslate(on, layout);
+      toast(on ? `Translation on · ${LAYOUT[layout]}` : "Translation off");
+    })();
+  });
   const lang = $("#set-lang"), trModel = $("#set-trmodel"), focus = $("#set-focus");
   lang.value = app.settings.lang; trModel.value = app.settings.trModel; focus.checked = app.settings.sentenceFocus;
   const retranslate = () => { saveSettings(); resetTranslations(); forVisible(translatePage); };

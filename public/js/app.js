@@ -2,10 +2,31 @@
 import { h, esc, icon, debounce } from "./util.js";
 import { me } from "./auth.js";
 
+// Answer and translation languages (names in their own script). Codes match LANG in lib/prompts.js.
+export const LANGS = [
+  ["zh", "简体中文"], ["zh-TW", "繁體中文"], ["en", "English"], ["ja", "日本語"], ["ko", "한국어"],
+  ["ar", "العربية"], ["fa", "فارسی"], ["he", "עברית"], ["hi", "हिन्दी"], ["bn", "বাংলা"],
+  ["th", "ไทย"], ["vi", "Tiếng Việt"], ["id", "Bahasa Indonesia"], ["ms", "Bahasa Melayu"],
+  ["fr", "Français"], ["de", "Deutsch"], ["es", "Español"], ["pt", "Português"], ["it", "Italiano"],
+  ["nl", "Nederlands"], ["pl", "Polski"], ["ru", "Русский"], ["uk", "Українська"], ["tr", "Türkçe"],
+];
+
+// Default language for a reader who has not picked one: the browser's first supported language
+// (zh-TW/HK/MO and zh-Hant → Traditional Chinese), else English.
+export function langFor(list) {
+  for (const tag of list) {
+    const t = String(tag).toLowerCase();
+    if (/^zh-(tw|hk|mo|hant)/.test(t)) return "zh-TW";
+    const hit = LANGS.find(([v]) => v.toLowerCase() === t) || LANGS.find(([v]) => v === t.split("-")[0]);
+    if (hit) return hit[0];
+  }
+  return "en";
+}
+
 export const app = {
   key: "", meta: {}, pdf: null, viewer: null, eventBus: null, linkService: null,
   state: { highlights: [], explanations: [], citations: [], notes: "", chat: [], chats: null, summary: "" },
-  settings: { lang: "zh", trModel: "lite", sentenceFocus: true, figures: true, autoHighlight: false, translate: false, trLayout: "inline" },
+  settings: { lang: langFor(navigator.languages?.length ? navigator.languages : [navigator.language]), trModel: "lite", sentenceFocus: true, figures: true, autoHighlight: false, translate: false, trLayout: "inline" },
   pages: [], // per page index: { sentences, figures, autohl, translation }
 };
 
